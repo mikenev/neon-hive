@@ -8,7 +8,7 @@ namespace NeonHive {
   public class GameAudio : MonoBehaviour {
     public static GameAudio I;
     public AudioClip music, shot, bugHit, bugExplode, playerHit, lifeLost;
-    public AudioClip spread, laser, plasma, homing, pickup, extraLife, levelStart, levelClear, bossWarning, bossHit, bossExplode, enemyShot;
+    public AudioClip spread, laser, plasma, homing, pickup, extraLife, levelStart, levelClear, bossWarning, bossHit, bossExplode, enemyShot, menuMove, menuSelect;
     [Range(0, 1)] public float musicVolume = 0.4f, sfxVolume = 0.8f;
     const int MaxSame = 3, MaxTotal = 8;
     static bool unlocked;
@@ -28,9 +28,15 @@ namespace NeonHive {
       R("spread", spread, 0.3f, 0.12f); R("laser", laser, 0.3f, 0.14f); R("plasma", plasma, 0.28f, 0.1f); R("homing", homing, 0.3f, 0.14f);
       R("pickup", pickup, 0.8f, 0.2f); R("extraLife", extraLife, 0.85f, 0.5f); R("levelStart", levelStart, 0.7f, 1f); R("levelClear", levelClear, 0.75f, 1f);
       R("bossWarning", bossWarning, 0.85f, 1f); R("bossHit", bossHit, 0.45f, 0.09f); R("bossExplode", bossExplode, 0.9f, 1f); R("enemyShot", enemyShot, 0.4f, 0.1f);
+      R("menuMove", menuMove, 0.5f, 0.05f); R("menuSelect", menuSelect, 0.6f, 0.1f);
       R("playerHit", playerHit, 0.9f, 0.3f); R("lifeLost", lifeLost, 0.8f, 0.5f);
     }
     void Start(){ if (unlocked && mus.clip) mus.Play(); }
+    /// <summary>Switch the music loop (menu / theme); no-op if it is already playing.</summary>
+    public void SetMusic(AudioClip c){
+      if (!c || mus.clip == c) return;
+      mus.clip = c; if (unlocked) mus.Play();
+    }
     static bool AnyInput(){
       var kb = Keyboard.current; if (kb != null && kb.anyKey.wasPressedThisFrame) return true;
       var m = Mouse.current; if (m != null && m.leftButton.wasPressedThisFrame) return true;
