@@ -240,7 +240,7 @@ namespace NeonHive {
     }
     void DamageBoss(float d){
       if (!bossAlive) return;
-      int q0 = Mathf.CeilToInt(bossHp / bossMaxHp * 4f); bossHp -= d; bossFlash = 0.06f;
+      int q0 = Mathf.CeilToInt(bossHp / bossMaxHp * 4f); bossHp -= d; bossFlash = 0.04f;
       if (bossHp > 0f && Mathf.CeilToInt(bossHp / bossMaxHp * 4f) < q0) Debug.Log($"[NH] boss hp={bossHp:0} t={bossTime:0.0}s"); GameAudio.I?.Play("bossHit"); LogOnce("bosshit", "[NH] boss hit");
       if (bossHp <= 0f){
         bossAlive = false; phase = Phase.BossDying; phaseT = 0f; GameAudio.I?.Play("bossExplode"); AddScore(5000);
@@ -399,7 +399,7 @@ namespace NeonHive {
       foreach (var f in fxs) f.t.SetPositionAndRotation(Track.At(f.s, f.ang, f.r), Bill(f.ang));
       if (boss.gameObject.activeSelf){
         boss.SetPositionAndRotation(Track.At(bossS, 0f, 0f), cam.transform.rotation * Quaternion.Euler(0, 0, Mathf.Sin(bossAge * 0.5f) * 12f));
-        bossSr.color = bossFlash > 0f ? Color.white : bossTint;
+        bossSr.color = bossFlash > 0f ? Color.Lerp(bossTint, Color.white, 0.45f) : bossTint;
       }
     }
     void Animate(float dt){
