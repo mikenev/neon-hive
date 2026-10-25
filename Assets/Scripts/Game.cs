@@ -311,17 +311,17 @@ namespace NeonHive {
       if (fan){                   // bullet fan around the ship's angle
         int n = enraged ? d.fanNRage : d.fanN; float spreadDeg = enraged ? d.fanDegRage : d.fanDeg, off = Random.Range(-8f, 8f);
         for (int k = 0; k < n; k++) FireEnemyBullet(bossS - 1f, Ang + off + Mathf.Lerp(-spreadDeg, spreadDeg, k / (n - 1f)), 0f);
-        GameAudio.I?.Play("enemyShot"); LogOnce("bossfan" + enraged, $"[NH] boss pattern fan n={n} deg={spreadDeg} cd={(enraged ? d.fanCdRage : d.fanCd)}");
+        GameAudio.I?.Play("enemyShot"); LogOnce("bossfan" + d.name + enraged, $"[NH] boss pattern fan n={n} deg={spreadDeg} cd={(enraged ? d.fanCdRage : d.fanCd)}");
         bossCd = enraged ? d.fanCdRage : d.fanCd;
       } else if (burst){          // evenly spaced radial burst with wide gaps to slip through
         int n = enraged ? d.burstNRage : d.burstN; float a0 = Random.Range(-180f, 180f);
         for (int k = 0; k < n; k++) FireEnemyBullet(bossS - 1f, a0 + k * 360f / n, 0f);
-        GameAudio.I?.Play("enemyShot"); LogOnce("bossburst" + enraged, $"[NH] boss pattern burst n={n}");
+        GameAudio.I?.Play("enemyShot"); LogOnce("bossburst" + d.name + enraged, $"[NH] boss pattern burst n={n}");
         bossCd = enraged ? d.fanCdRage : d.fanCd;
       } else {                    // spawn a ring of Mites (+ Wasps for the Hive Queen's brood)
         int n = enraged ? d.ringNRage : d.ringN, w = d.wasps, all = n + w; float a0 = Random.Range(-180f, 180f);
         for (int k = 0; k < all; k++) SpawnBug(k < n ? BugKind.Mite : BugKind.Wasp, bossS - 2f, a0 + k * 360f / all);
-        LogOnce("bossmites" + enraged, $"[NH] boss pattern mites n={n} wasps={w}"); bossCd = enraged ? d.ringCdRage : d.ringCd;
+        LogOnce("bossmites" + d.name + enraged, $"[NH] boss pattern mites n={n} wasps={w}"); bossCd = enraged ? d.ringCdRage : d.ringCd;
       }
       bossPattern++;
     }
