@@ -25,6 +25,7 @@ namespace NeonHive {
   public class ThemeDef {
     public string name; public LevelDef[] levels; public BossDef boss;
     public Color primary, secondary, accent, wasp, spinner, boss_; public float bugScale = 1f;
+    public Color mite = new Color32(0xFF, 0xE1, 0x4D, 255);   // Mite tint; Redline Core overrides it (its wall strips are this yellow)
   }
 
   /// <summary>Ion Drift (theme 1): four authored levels, curves gentle → stronger (and a little twist late), then the
@@ -92,7 +93,7 @@ namespace NeonHive {
       new ThemeDef{ name = "Acid Hive", levels = AcidHive.Levels, boss = AcidHive.Boss, bugScale = 1.1f,
         primary = H(0x9DFF00), secondary = H(0xFFB300), accent = H(0x00FFA3), wasp = H(0x00FFA3), spinner = H(0xFF2E4D), boss_ = H(0xFFB300) },
       new ThemeDef{ name = "Redline Core", levels = RedlineCore.Levels, boss = RedlineCore.Boss, bugScale = 1.18f,
-        primary = H(0xFF2E4D), secondary = H(0xA15CFF), accent = H(0xFFE14D), wasp = H(0xA15CFF), spinner = H(0x00F0FF), boss_ = H(0xFFE14D) },
+        primary = H(0xFF2E4D), secondary = H(0xA15CFF), accent = H(0xFFE14D), wasp = H(0xA15CFF), spinner = H(0x00F0FF), boss_ = H(0xFFE14D), mite = H(0xE6FFFF) },
     };
   }
 }

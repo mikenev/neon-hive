@@ -65,7 +65,7 @@ namespace NeonHive {
     void ApplyTheme(int t){
       theme = t; var d = T;
       tunnel.SetTheme(t, d.primary, d.secondary, d.accent);
-      uiTint = d.primary; boltTint = d.secondary; fxTint = d.accent; waspTint = d.wasp; spinnerTint = d.spinner; bossTint = d.boss_;
+      uiTint = d.primary; boltTint = d.secondary; fxTint = d.accent; waspTint = d.wasp; spinnerTint = d.spinner; bossTint = d.boss_; miteTint = d.mite;
       if (bossSprites != null && t < bossSprites.Length && bossSprites[t]) bossSr.sprite = bossSprites[t];
       big = null; Debug.Log($"[NH] theme {t + 1} \"{d.name}\" boss={d.boss.name} hp={d.boss.hp}");
     }
@@ -387,7 +387,7 @@ namespace NeonHive {
       switch (Power){
         case PowerKind.Spread: for (int k = -1; k <= 1; k++) AddBolt(Ang + k * 11f, boltSpeed, 1f, false, false, boltTint, 1.7f); fireCd = 0.16f; GameAudio.I?.Play("spread"); break;
         case PowerKind.Laser: AddBolt(Ang, 100f, 2f, true, false, uiTint, 3.4f); fireCd = 0.18f; GameAudio.I?.Play("laser"); break;
-        case PowerKind.Rapid: AddBolt(Ang + Random.Range(-2f, 2f), boltSpeed, 1f, false, false, boltTint, 1.6f); fireCd = 0.065f; GameAudio.I?.Play("plasma"); break;
+        case PowerKind.Rapid: AddBolt(Ang + Random.Range(-2f, 2f), boltSpeed, 1f, false, false, boltTint, 1.6f); fireCd = 0.065f; GameAudio.I?.Play("rapid"); break;
         case PowerKind.Homing: AddBolt(Ang, 52f, 1f, false, true, waspTint, 1.7f); fireCd = 0.15f; GameAudio.I?.Play("homing"); break;
         default: AddBolt(Ang, boltSpeed, 1f, false, false, boltTint, 1.7f); fireCd = fireInterval; GameAudio.I?.Play("shot"); break;
       }
@@ -433,7 +433,7 @@ namespace NeonHive {
 
     // ---------------- power-ups ----------------
     Sprite PowerSprite(PowerKind k) => k == PowerKind.Spread ? spreadSprite : k == PowerKind.Laser ? laserSprite : k == PowerKind.Rapid ? rapidSprite : homingSprite;
-    Color PowerTint(PowerKind k) => k == PowerKind.Spread ? miteTint : k == PowerKind.Laser ? uiTint : k == PowerKind.Rapid ? boltTint : waspTint;
+    Color PowerTint(PowerKind k) => k == PowerKind.Spread ? (Color)new Color32(0xFF, 0xE1, 0x4D, 255) : k == PowerKind.Laser ? uiTint : k == PowerKind.Rapid ? boltTint : waspTint;
     void SpawnPickup(float s, float ang, PowerKind k = PowerKind.None){
       if (k == PowerKind.None){ do k = (PowerKind)Random.Range(1, 5); while (k == Power); }
       var glow = MakeSprite("PickupGlow", glowSprite, PowerTint(k), 2.2f, out _).transform;
@@ -476,7 +476,7 @@ namespace NeonHive {
       cam.transform.SetPositionAndRotation(Track.P(cs), Quaternion.LookRotation(Track.P(S + lookAhead) - Track.P(cs), Track.Frame(cs) * Vector3.up));
       tunnel.Follow(cs);
       ship.SetPositionAndRotation(Track.At(S, Ang, shipR), Bill(Ang));
-      shipSr.enabled = invuln <= 0f || State != GameState.Playing || Mathf.Repeat(Time.time * 10f, 1f) > 0.4f;
+      shipSr.enabled = State == GameState.Playing && (invuln <= 0f || Mathf.Repeat(Time.time * 10f, 1f) > 0.4f);   // hidden on menu / pause screens (it sat under the bottom button)
       foreach (var b in bugs) b.t.SetPositionAndRotation(Track.At(b.s, b.ang, shipR), Bill(b.ang) * (b.kind == BugKind.Spinner ? Quaternion.Euler(0, 0, b.age * 220f) : Quaternion.identity));
       foreach (var b in bolts) b.t.SetPositionAndRotation(Track.At(b.s, b.ang, shipR), Bill(b.ang));
       foreach (var e in ebullets) e.t.SetPositionAndRotation(Track.At(e.s, e.ang, BulletR(e)), Bill(e.ang));
