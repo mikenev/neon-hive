@@ -101,7 +101,7 @@ public static class BuildWeb {
     ga.bugExplode = Load<AudioClip>("Assets/Audio/SFX/bug_explode.ogg"); ga.playerHit = Load<AudioClip>("Assets/Audio/SFX/player_hit.ogg");
     ga.lifeLost = Load<AudioClip>("Assets/Audio/SFX/life_lost.ogg");
     AudioClip Sfx(string n) => Load<AudioClip>($"Assets/Audio/SFX/{n}.ogg");
-    ga.spread = Sfx("weapon_spread"); ga.laser = Sfx("weapon_laser"); ga.plasma = Sfx("weapon_plasma"); ga.homing = Sfx("weapon_homing");
+    ga.spread = Sfx("weapon_spread"); ga.laser = Sfx("weapon_laser"); ga.rapid = Sfx("weapon_rapid"); ga.homing = Sfx("weapon_homing");
     ga.pickup = Sfx("powerup_pickup"); ga.extraLife = Sfx("extra_life"); ga.levelStart = Sfx("level_start"); ga.levelClear = Sfx("level_clear");
     ga.bossWarning = Sfx("boss_warning"); ga.bossHit = Sfx("boss_hit"); ga.bossExplode = Sfx("boss_explode"); ga.enemyShot = Sfx("enemy_shot");
     ga.menuMove = Sfx("menu_move"); ga.menuSelect = Sfx("menu_select");
@@ -116,6 +116,12 @@ public static class BuildWeb {
   static void PatchIndexHtml(string outDir){
     var p = Path.Combine(outDir, "index.html"); if (!File.Exists(p)) return;
     var html = File.ReadAllText(p); if (html.Contains("nh-input-guard")) return;
+    // launch page: plain title + Neon Hive favicon (Web/favicon.png, made from the Mite art) instead of Unity's
+    html = System.Text.RegularExpressions.Regex.Replace(html, "<title>.*?</title>", "<title>Neon Hive</title>");
+    if (File.Exists("Web/favicon.png")){
+      File.Copy("Web/favicon.png", Path.Combine(outDir, "favicon.png"), true);
+      html = html.Replace("<link rel=\"shortcut icon\" href=\"TemplateData/favicon.ico\">", "<link rel=\"icon\" type=\"image/png\" href=\"favicon.png\">");
+    } else Debug.LogWarning("[Build] Web/favicon.png missing, keeping the template favicon");
     const string css = "<style id=\"nh-input-guard-css\">html,body{overscroll-behavior:none;background:#04030A}#unity-canvas{touch-action:none;-ms-touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;outline:none}</style>";
     const string js = @"<script id=""nh-input-guard"">(function(){
   var c=document.getElementById('unity-canvas'); if(!c) return;

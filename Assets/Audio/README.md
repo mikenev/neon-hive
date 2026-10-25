@@ -21,7 +21,7 @@ SFX are one-shots (`loop = false`, or use `PlayOneShot`).
 | `player_shot.ogg` | 0.16 s | -6.0 | no | Default player shot |
 | `weapon_spread.ogg` | 0.24 s | -6.6 | no | Power-up weapon 1: spread (3 fanned zaps) |
 | `weapon_laser.ogg` | 0.32 s | -5.8 | no | Power-up weapon 2: laser beam |
-| `weapon_plasma.ogg` | 0.36 s | -5.7 | no | Power-up weapon 3: plasma blob |
+| `weapon_rapid.ogg` | 0.36 s | -5.7 | no | Power-up weapon 3: rapid fire |
 | `weapon_homing.ogg` | 0.34 s | -5.9 | no | Power-up weapon 4: homing (lock-on chirp + whoosh) |
 | `enemy_shot.ogg` | 0.20 s | -6.1 | no | Enemy shot |
 | `bug_hit.ogg` | 0.10 s | -5.9 | no | Bug hit |
