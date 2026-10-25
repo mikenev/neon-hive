@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &346814586
+--- !u!1 &734835903
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,10 +127,74 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 346814590}
-  - component: {fileID: 346814587}
-  - component: {fileID: 346814589}
-  - component: {fileID: 346814588}
+  - component: {fileID: 734835905}
+  - component: {fileID: 734835904}
+  m_Layer: 0
+  m_Name: GameAudio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &734835904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734835903}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d15a5cff461ce4ceda4c4d9ea346616c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NeonHive.GameAudio
+  music: {fileID: 8300000, guid: c0f811fa49c1ac7f292561b51db7bee2, type: 3}
+  shot: {fileID: 8300000, guid: fe0d025491594b7b3a0980c9828e156c, type: 3}
+  bugHit: {fileID: 8300000, guid: 14b84279e3c5faec2b76bf6326fcede4, type: 3}
+  bugExplode: {fileID: 8300000, guid: 924c8393c877e6a27963a192cf312c86, type: 3}
+  playerHit: {fileID: 8300000, guid: a4f22ad2973ed7d1884c5b582e874c97, type: 3}
+  lifeLost: {fileID: 8300000, guid: 26d38504b79469987848d7ef49908a1d, type: 3}
+  spread: {fileID: 8300000, guid: a951af7757eb42985a23a23b9f7bfd24, type: 3}
+  laser: {fileID: 8300000, guid: fd19ae34ba28547fd84073fdcb8a4b35, type: 3}
+  plasma: {fileID: 8300000, guid: c7fa7c4459d2c4f9d914838fe67ef3e0, type: 3}
+  homing: {fileID: 8300000, guid: 2f390dd29084b5e6c82aa4d7f60cc0ae, type: 3}
+  pickup: {fileID: 8300000, guid: 5aff5b5875eaab69badbbee467c02b70, type: 3}
+  extraLife: {fileID: 8300000, guid: 518b3787ec2ffaf7ea8af2ccddec09c2, type: 3}
+  levelStart: {fileID: 8300000, guid: 8795dbb79633c982e803816b4b8cfb1d, type: 3}
+  levelClear: {fileID: 8300000, guid: 77e0018217f998f18ac5df477d69673d, type: 3}
+  bossWarning: {fileID: 8300000, guid: 68c219053796e0065ab1ea371b13410e, type: 3}
+  bossHit: {fileID: 8300000, guid: 012f7bf4708df6e4a9d1f5beced6640a, type: 3}
+  bossExplode: {fileID: 8300000, guid: 966527fcb1229c849811d1d422f2b221, type: 3}
+  enemyShot: {fileID: 8300000, guid: b7b331dfb46c9e943bef2c4a6109fdc1, type: 3}
+  musicVolume: 0.4
+  sfxVolume: 0.8
+--- !u!4 &734835905
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734835903}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &974811393
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 974811397}
+  - component: {fileID: 974811394}
+  - component: {fileID: 974811396}
+  - component: {fileID: 974811395}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -138,13 +202,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!20 &346814587
+--- !u!20 &974811394
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 346814586}
+  m_GameObject: {fileID: 974811393}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
@@ -189,21 +253,21 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &346814588
+--- !u!81 &974811395
 AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 346814586}
+  m_GameObject: {fileID: 974811393}
   m_Enabled: 1
---- !u!114 &346814589
+--- !u!114 &974811396
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 346814586}
+  m_GameObject: {fileID: 974811393}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
@@ -241,13 +305,13 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!4 &346814590
+--- !u!4 &974811397
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 346814586}
+  m_GameObject: {fileID: 974811393}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -256,7 +320,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1127174071
+--- !u!1 &1410851752
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -264,8 +328,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1127174073}
-  - component: {fileID: 1127174072}
+  - component: {fileID: 1410851754}
+  - component: {fileID: 1410851753}
   m_Layer: 0
   m_Name: Tunnel
   m_TagString: Untagged
@@ -273,13 +337,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1127174072
+--- !u!114 &1410851753
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1127174071}
+  m_GameObject: {fileID: 1410851752}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5efe89ee4abe683d9a0adf37fa3c872b, type: 3}
@@ -295,13 +359,13 @@ MonoBehaviour:
   primary: {r: 0, g: 0.9411765, b: 1, a: 1}
   secondary: {r: 1, g: 0.16862746, b: 0.8392157, a: 1}
   accent: {r: 0.23921569, g: 0.48235294, b: 1, a: 1}
---- !u!4 &1127174073
+--- !u!4 &1410851754
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1127174071}
+  m_GameObject: {fileID: 1410851752}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -310,7 +374,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1537641318
+--- !u!1 &1958562405
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -318,8 +382,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1537641320}
-  - component: {fileID: 1537641319}
+  - component: {fileID: 1958562407}
+  - component: {fileID: 1958562406}
   m_Layer: 0
   m_Name: PostFX
   m_TagString: Untagged
@@ -327,13 +391,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1537641319
+--- !u!114 &1958562406
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1537641318}
+  m_GameObject: {fileID: 1958562405}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
@@ -344,13 +408,13 @@ MonoBehaviour:
   blendDistance: 0
   weight: 1
   sharedProfile: {fileID: 11400000, guid: eece5d4b9bf8eb64d97ae3b72e436fc6, type: 2}
---- !u!4 &1537641320
+--- !u!4 &1958562407
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1537641318}
+  m_GameObject: {fileID: 1958562405}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -359,7 +423,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1855204050
+--- !u!1 &1983508272
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -367,72 +431,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1855204052}
-  - component: {fileID: 1855204051}
-  m_Layer: 0
-  m_Name: GameAudio
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1855204051
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1855204050}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d15a5cff461ce4ceda4c4d9ea346616c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NeonHive.GameAudio
-  music: {fileID: 8300000, guid: c0f811fa49c1ac7f292561b51db7bee2, type: 3}
-  shot: {fileID: 8300000, guid: fe0d025491594b7b3a0980c9828e156c, type: 3}
-  bugHit: {fileID: 8300000, guid: 14b84279e3c5faec2b76bf6326fcede4, type: 3}
-  bugExplode: {fileID: 8300000, guid: 924c8393c877e6a27963a192cf312c86, type: 3}
-  playerHit: {fileID: 8300000, guid: a4f22ad2973ed7d1884c5b582e874c97, type: 3}
-  lifeLost: {fileID: 8300000, guid: 26d38504b79469987848d7ef49908a1d, type: 3}
-  spread: {fileID: 8300000, guid: a951af7757eb42985a23a23b9f7bfd24, type: 3}
-  laser: {fileID: 8300000, guid: fd19ae34ba28547fd84073fdcb8a4b35, type: 3}
-  plasma: {fileID: 8300000, guid: c7fa7c4459d2c4f9d914838fe67ef3e0, type: 3}
-  homing: {fileID: 8300000, guid: 2f390dd29084b5e6c82aa4d7f60cc0ae, type: 3}
-  pickup: {fileID: 8300000, guid: 5aff5b5875eaab69badbbee467c02b70, type: 3}
-  extraLife: {fileID: 8300000, guid: 518b3787ec2ffaf7ea8af2ccddec09c2, type: 3}
-  levelStart: {fileID: 8300000, guid: 8795dbb79633c982e803816b4b8cfb1d, type: 3}
-  levelClear: {fileID: 8300000, guid: 77e0018217f998f18ac5df477d69673d, type: 3}
-  bossWarning: {fileID: 8300000, guid: 68c219053796e0065ab1ea371b13410e, type: 3}
-  bossHit: {fileID: 8300000, guid: 012f7bf4708df6e4a9d1f5beced6640a, type: 3}
-  bossExplode: {fileID: 8300000, guid: 966527fcb1229c849811d1d422f2b221, type: 3}
-  enemyShot: {fileID: 8300000, guid: b7b331dfb46c9e943bef2c4a6109fdc1, type: 3}
-  musicVolume: 0.4
-  sfxVolume: 0.8
---- !u!4 &1855204052
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1855204050}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1897987912
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1897987914}
-  - component: {fileID: 1897987913}
+  - component: {fileID: 1983508274}
+  - component: {fileID: 1983508273}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -440,20 +440,20 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1897987913
+--- !u!114 &1983508273
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1897987912}
+  m_GameObject: {fileID: 1983508272}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d70bdc8c263f30c078fb5682d78be2a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NeonHive.Game
-  tunnel: {fileID: 1127174072}
-  cam: {fileID: 346814587}
+  tunnel: {fileID: 1410851753}
+  cam: {fileID: 974811394}
   spriteMat: {fileID: 2100000, guid: b3154a897b0e9a65f8ee6274707ebbe2, type: 2}
   miteMat: {fileID: 2100000, guid: ac22669e3e94216f8bd77fa9ecef1545, type: 2}
   shipSprite: {fileID: 21300000, guid: 56b40b72295232a2c3fc34d39cd447d6, type: 3}
@@ -485,6 +485,7 @@ MonoBehaviour:
   iconLife: {fileID: 2800000, guid: 567a8c00997129ee56493d28f4d4e6c2, type: 3}
   iconScore: {fileID: 2800000, guid: df053c34ba524c865dc8d30f248069e8, type: 3}
   iconPause: {fileID: 2800000, guid: 2041ac9bed446dbabdeca10f73316f56, type: 3}
+  logo: {fileID: 2800000, guid: 04445416c85627e5c80a0546ae75dbf8, type: 3}
   speed: 14
   shipR: 4.1
   turnSpeed: 170
@@ -511,13 +512,13 @@ MonoBehaviour:
   spinnerTint: {r: 1, g: 0.18039216, b: 0.3019608, a: 1}
   enemyBulletTint: {r: 1, g: 0.5411765, b: 0.23921569, a: 1}
   bossTint: {r: 1, g: 0.16862746, b: 0.8392157, a: 1}
---- !u!4 &1897987914
+--- !u!4 &1983508274
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1897987912}
+  m_GameObject: {fileID: 1983508272}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -530,8 +531,8 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 346814590}
-  - {fileID: 1537641320}
-  - {fileID: 1127174073}
-  - {fileID: 1897987914}
-  - {fileID: 1855204052}
+  - {fileID: 974811397}
+  - {fileID: 1958562407}
+  - {fileID: 1410851754}
+  - {fileID: 1983508274}
+  - {fileID: 734835905}
