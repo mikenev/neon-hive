@@ -15,13 +15,13 @@ namespace NeonHive {
     [Header("Refs (set by BuildWeb.SetupScene)")]
     public Tunnel tunnel; public Camera cam; public Material spriteMat;
     public Sprite shipSprite, miteSprite, bulletSprite; public Sprite[] explosion, spark;
-    public Texture2D iconLife, iconScore;
+    public Texture2D iconLife, iconScore, iconPause; public Material miteMat;
     [Header("Tuning")]
     public float speed = 14f, shipR = 4.1f, turnSpeed = 170f, camBack = 9f, lookAhead = 22f;
     public float fireInterval = 0.13f, boltSpeed = 62f, boltLife = 1.3f;
     public float miteSpeed = 13f, miteHoming = 22f, spawnAhead = 75f, spawnStart = 1.0f, spawnMin = 0.38f, spawnRamp = 0.012f;
     public int startLives = 3; public float invulnTime = 1.6f, hitDs = 1.1f, hitArc = 1.05f;
-    public Color shipTint = Color.white, miteTint = new Color32(0x00, 0xF0, 0xFF, 255), boltTint = new Color32(0xFF, 0x2B, 0xD6, 255), fxTint = new Color32(0x3D, 0x7B, 0xFF, 255);
+    public Color shipTint = Color.white, uiTint = new Color32(0x00, 0xF0, 0xFF, 255), miteTint = new Color32(0xFF, 0xE1, 0x4D, 255), boltTint = new Color32(0xFF, 0x2B, 0xD6, 255), fxTint = new Color32(0x3D, 0x7B, 0xFF, 255);
 
     public GameState State { get; private set; } = GameState.Ready;
     public int Score { get; private set; } public int Lives { get; private set; }
@@ -32,6 +32,8 @@ namespace NeonHive {
     readonly List<Mite> mites = new(); readonly List<Bolt> bolts = new(); readonly List<Fx> fxs = new();
     Transform ship; SpriteRenderer shipSr;
     float fireCd, spawnCd, playTime, invuln, overAt, touchMoved; int shots; bool touching;
+    bool touchConsumed;   // this touch started/ended a screen or hit the pause button: no turning or auto-fire until released
+    bool holdFire;        // after start / restart / resume: no fire until every fire input has been released
 
     void Awake(){ I = this; Lives = startLives; }
     void Start(){
@@ -57,6 +59,27 @@ namespace NeonHive {
       var kb = Keyboard.current; var gp = Gamepad.current;
       return (kb != null && kb.spaceKey.isPressed) || (gp != null && (gp.buttonSouth.isPressed || gp.rightTrigger.ReadValue() > 0.5f)) || touching;
     }
+    bool AnyFireDown(){
+      var ts = Touchscreen.current;
+      return FireHeld() || (ts != null && ts.primaryTouch.press.isPressed) || (Keyboard.current != null && Keyboard.current.enterKey.isPressed);
+    }
+    /// <summary>Top-right on-screen pause button, in GUI units (720 high).</summary>
+    Rect PauseRect => new Rect(Screen.width / (Screen.height / 720f) - 92f, 14f, 76f, 76f);
+    /// <summary>A touch / click that began this frame on the pause button (it is consumed: no shot, no turn).</summary>
+    bool PauseButtonPressed(){
+      Vector2 p; var ts = Touchscreen.current; var ms = Mouse.current;
+      if (ts != null && ts.primaryTouch.press.wasPressedThisFrame) p = ts.primaryTouch.position.ReadValue();
+      else if (ms != null && ms.leftButton.wasPressedThisFrame) p = ms.position.ReadValue();
+      else return false;
+      float sc = Screen.height / 720f; var g = new Vector2(p.x / sc, (Screen.height - p.y) / sc);
+      return PauseRect.Contains(g);
+    }
+    bool TouchBegan(){ var ts = Touchscreen.current; return ts != null && ts.primaryTouch.press.wasPressedThisFrame; }
+    /// <summary>Enter Playing from a screen; the input that did it never fires or turns the ship.</summary>
+    void GoPlay(string what){
+      State = GameState.Playing; Time.timeScale = 1f; holdFire = true; if (TouchBegan()) touchConsumed = true;
+      Debug.Log($"[NH] {what} shots={shots} ang={Ang:0}");
+    }
     bool FirePressed(){
       var kb = Keyboard.current; var gp = Gamepad.current; var ts = Touchscreen.current; var ms = Mouse.current;
       return (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
@@ -70,6 +93,8 @@ namespace NeonHive {
     /// <summary>Touch: horizontal drag turns the ship (screen-width drag ≈ 300°); any touch held = auto-fire.</summary>
     float TouchTurn(){
       var ts = Touchscreen.current; bool now = ts != null && ts.primaryTouch.press.isPressed;
+      if (!now) touchConsumed = false;
+      if (touchConsumed){ touching = false; touchMoved = 0f; return 0f; }
       float d = 0f;
       if (now){ float dx = ts.primaryTouch.delta.ReadValue().x; d = dx / Mathf.Max(1, Screen.width) * 300f; touchMoved += d; }
       if (touching && !now){ if (Mathf.Abs(touchMoved) > 1f) Debug.Log($"[NH] touch drag turned {touchMoved:0} deg ang={Ang:0}"); touchMoved = 0f; }
@@ -82,14 +107,17 @@ namespace NeonHive {
       DevKeys();
 #endif
       switch (State){
-        case GameState.Ready: if (FirePressed()){ State = GameState.Playing; Debug.Log("[NH] start"); } break;
-        case GameState.Paused: if (PausePressed()){ State = GameState.Playing; Time.timeScale = 1f; Debug.Log("[NH] resumed"); } break;
+        case GameState.Ready: if (FirePressed()) GoPlay("start"); break;
+        case GameState.Paused: if (PausePressed() || PauseButtonPressed() || TouchBegan()) GoPlay("resumed"); break;
         case GameState.GameOver:
           TouchTurn();
           if (Time.unscaledTime - overAt > 0.8f && FirePressed()) Restart();
           break;
         case GameState.Playing:
-          if (PausePressed()){ State = GameState.Paused; Time.timeScale = 0f; Debug.Log("[NH] paused"); break; }
+          if (PausePressed() || PauseButtonPressed()){
+            if (TouchBegan()) touchConsumed = true;
+            State = GameState.Paused; Time.timeScale = 0f; Debug.Log($"[NH] paused shots={shots} ang={Ang:0}"); break;
+          }
           Tick(Time.deltaTime); break;
       }
       Place(); Animate(Time.deltaTime);
@@ -99,7 +127,8 @@ namespace NeonHive {
       if (dt <= 0f) return;   // frozen (dev showcase)
       playTime += dt; S += speed * dt;
       Ang = Mathf.Repeat(Ang + MoveAxis() * turnSpeed * dt + TouchTurn() + 180f, 360f) - 180f;
-      fireCd -= dt; if (FireHeld() && fireCd <= 0f){ fireCd = fireInterval; Fire(); }
+      if (holdFire && !AnyFireDown()) holdFire = false;
+      fireCd -= dt; if (!holdFire && FireHeld() && fireCd <= 0f){ fireCd = fireInterval; Fire(); }
       spawnCd -= dt;
       if (spawnCd <= 0f){ spawnCd = Mathf.Max(spawnMin, spawnStart - playTime * spawnRamp); SpawnMite(S + spawnAhead, Random.Range(-180f, 180f)); }
       invuln -= dt;
@@ -124,7 +153,7 @@ namespace NeonHive {
       if (shots == 1 || shots % 25 == 0) Debug.Log($"[NH] fired shots={shots}");
     }
     void SpawnMite(float s, float ang){
-      var go = MakeSprite("Mite", miteSprite, miteTint, 1.7f, out var sr);
+      var go = MakeSprite("Mite", miteSprite, miteTint, 1.7f, out var sr); if (miteMat) sr.sharedMaterial = miteMat;
       mites.Add(new Mite{ t = go.transform, sr = sr, s = s, ang = ang, speed = miteSpeed * Random.Range(0.85f, 1.2f) });
     }
     void Kill(Mite m){
@@ -147,8 +176,8 @@ namespace NeonHive {
     void Restart(){
       foreach (var m in mites) Destroy(m.t.gameObject); foreach (var b in bolts) Destroy(b.t.gameObject); foreach (var f in fxs) Destroy(f.t.gameObject);
       mites.Clear(); bolts.Clear(); fxs.Clear();
-      Score = 0; Lives = startLives; playTime = 0f; spawnCd = 1f; invuln = invulnTime; Time.timeScale = 1f; State = GameState.Playing;
-      Debug.Log("[NH] restart");
+      Score = 0; Lives = startLives; playTime = 0f; spawnCd = 1f; invuln = invulnTime;
+      GoPlay("restart");
     }
 
     // ---------------- presentation ----------------
@@ -175,16 +204,21 @@ namespace NeonHive {
     void OnGUI(){
       float sc = Screen.height / 720f; GUI.matrix = Matrix4x4.Scale(new Vector3(sc, sc, 1f)); float W = Screen.width / sc, H = 720f;
       if (big == null){
-        big = new GUIStyle(GUI.skin.label){ fontSize = 64, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; big.normal.textColor = miteTint;
+        big = new GUIStyle(GUI.skin.label){ fontSize = 64, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; big.normal.textColor = uiTint;
         mid = new GUIStyle(GUI.skin.label){ fontSize = 30, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft }; mid.normal.textColor = Color.white;
       }
       var old = GUI.color;
       GUI.color = boltTint; for (int i = 0; i < Lives; i++) if (iconLife) GUI.DrawTexture(new Rect(24 + i * 52, 20, 44, 44), iconLife);
-      GUI.color = miteTint; if (iconScore) GUI.DrawTexture(new Rect(W - 250, 20, 44, 44), iconScore);
-      GUI.color = old; GUI.Label(new Rect(W - 198, 18, 190, 48), Score.ToString("000000"), mid);
+      GUI.color = uiTint; if (iconScore) GUI.DrawTexture(new Rect(W - 350, 20, 44, 44), iconScore);
+      GUI.color = old; GUI.Label(new Rect(W - 298, 18, 190, 48), Score.ToString("000000"), mid);
+      if (State == GameState.Playing || State == GameState.Paused){   // on-screen pause / resume button (touch players)
+        var pr = PauseRect; GUI.color = new Color(uiTint.r, uiTint.g, uiTint.b, State == GameState.Paused ? 0.35f : 0.18f);
+        GUI.DrawTexture(pr, Texture2D.whiteTexture); GUI.color = uiTint;
+        if (iconPause) GUI.DrawTexture(new Rect(pr.x + 10, pr.y + 10, pr.width - 20, pr.height - 20), iconPause); GUI.color = old;
+      }
       var c = new GUIStyle(mid){ alignment = TextAnchor.MiddleCenter };
       if (State == GameState.Ready){ GUI.Label(new Rect(0, H * 0.3f, W, 90), "NEON HIVE", big); GUI.Label(new Rect(0, H * 0.3f + 100, W, 50), "Space / A / tap to start", c); }
-      else if (State == GameState.Paused){ GUI.Label(new Rect(0, H * 0.35f, W, 90), "PAUSED", big); GUI.Label(new Rect(0, H * 0.35f + 100, W, 50), "Esc / Start to resume", c); }
+      else if (State == GameState.Paused){ GUI.Label(new Rect(0, H * 0.35f, W, 90), "PAUSED", big); GUI.Label(new Rect(0, H * 0.35f + 100, W, 50), "Tap or Esc / Start to resume", c); }
       else if (State == GameState.GameOver){
         GUI.Label(new Rect(0, H * 0.3f, W, 90), "GAME OVER", big); GUI.Label(new Rect(0, H * 0.3f + 100, W, 50), $"Score {Score}", c);
         GUI.Label(new Rect(0, H * 0.3f + 150, W, 50), "Space / A / tap to restart", c);
@@ -195,7 +229,12 @@ namespace NeonHive {
     /// <summary>Dev only. F8: stage and freeze a showcase frame (Mites ahead of the ship, bolts in flight, an explosion);
     /// F8 again resumes.</summary>
     void DevKeys(){
-      var kb = Keyboard.current; if (kb == null || !kb.f8Key.wasPressedThisFrame) return;
+      var kb = Keyboard.current; if (kb == null) return;
+      if (kb.f7Key.wasPressedThisFrame){   // dev: cycle Mite tint (yellow / magenta) to compare by eye
+        miteTint = miteTint.b > 0.5f ? (Color)new Color32(0xFF, 0xE1, 0x4D, 255) : (Color)new Color32(0xFF, 0x2B, 0xD6, 255);
+        foreach (var m in mites) m.sr.color = miteTint; Debug.Log($"[NH] dev mite tint {miteTint}");
+      }
+      if (!kb.f8Key.wasPressedThisFrame) return;
       if (Time.timeScale == 0f && State == GameState.Playing){ Time.timeScale = 1f; Debug.Log("[NH] dev showcase resumed"); return; }
       if (State != GameState.Playing) return;
       for (int i = 0; i < 6; i++) SpawnMite(S + 7f + i * 4f, Ang + (i % 2 == 0 ? 1 : -1) * (14f + i * 9f));

@@ -11,7 +11,7 @@ namespace NeonHive {
     [Range(0, 1)] public float musicVolume = 0.4f, sfxVolume = 0.8f;
     const int MaxSame = 3, MaxTotal = 8;
     static bool unlocked;
-    AudioSource mus, sfx;
+    AudioSource mus, sfx, shotSrc;   // shots get their own source so a per-shot random pitch does not bend other SFX
     struct Rule { public AudioClip clip; public float vol, gap; }
     readonly Dictionary<string, Rule> rules = new(); readonly Dictionary<string, float> last = new();
     readonly List<(float end, AudioClip clip)> voices = new();
@@ -20,8 +20,9 @@ namespace NeonHive {
       I = this;
       mus = gameObject.AddComponent<AudioSource>(); mus.loop = true; mus.playOnAwake = false; mus.clip = music; mus.volume = musicVolume;
       sfx = gameObject.AddComponent<AudioSource>(); sfx.playOnAwake = false; sfx.volume = 1f;
+      shotSrc = gameObject.AddComponent<AudioSource>(); shotSrc.playOnAwake = false; shotSrc.volume = 1f;
       void R(string id, AudioClip c, float v, float g){ rules[id] = new Rule{ clip = c, vol = v, gap = g }; }
-      R("shot", shot, 0.45f, 0.06f); R("bugHit", bugHit, 0.6f, 0.04f); R("bugExplode", bugExplode, 0.7f, 0.05f);
+      R("shot", shot, 0.315f, 0.06f);   // -30% vs M1, random pitch 0.95-1.05 R("bugHit", bugHit, 0.6f, 0.04f); R("bugExplode", bugExplode, 0.7f, 0.05f);
       R("playerHit", playerHit, 0.9f, 0.3f); R("lifeLost", lifeLost, 0.8f, 0.5f);
     }
     void Start(){ if (unlocked && mus.clip) mus.Play(); }
@@ -44,7 +45,8 @@ namespace NeonHive {
       int same = 0; foreach (var v in voices) if (v.clip == r.clip) same++;
       if (same >= MaxSame || voices.Count >= MaxTotal) return;
       voices.Add((now + r.clip.length, r.clip)); last[id] = now;
-      sfx.PlayOneShot(r.clip, r.vol * sfxVolume);
+      if (id == "shot"){ shotSrc.pitch = Random.Range(0.95f, 1.05f); shotSrc.PlayOneShot(r.clip, r.vol * sfxVolume); }
+      else sfx.PlayOneShot(r.clip, r.vol * sfxVolume);
     }
   }
 }

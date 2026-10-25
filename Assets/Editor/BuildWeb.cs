@@ -56,6 +56,7 @@ public static class BuildWeb {
     if (!ringMesh) throw new System.Exception("ring mesh missing: Assets/Art/Tunnel/ion_drift_ring.obj");
     var ringMat = Mat("RingMat", Load<Texture2D>("Assets/Art/Tunnel/ion_drift_wall.png"), Color.white, 0f, 45f, 95f);
     var spriteMat = Mat("SpriteGlow", Texture2D.whiteTexture, new Color(2.2f, 2.2f, 2.2f, 1f), 1f, 1000f, 2000f);
+    var miteMat = Mat("MiteGlow", Texture2D.whiteTexture, new Color(3.2f, 3.2f, 3.2f, 1f), 1f, 1000f, 2000f);   // Mites glow a bit hotter than other sprites
     AssetDatabase.SaveAssets();
 
     var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -77,6 +78,7 @@ public static class BuildWeb {
     g.bulletSprite = Load<Sprite>("Assets/Art/FX/fx_bullet.png");
     g.explosion = Frames("Assets/Art/FX/fx_explosion_sheet.png"); g.spark = Frames("Assets/Art/FX/fx_hit_spark_sheet.png");
     g.iconLife = Load<Texture2D>("Assets/Art/UI/ui_icon_life.png"); g.iconScore = Load<Texture2D>("Assets/Art/UI/ui_icon_score.png");
+    g.iconPause = Load<Texture2D>("Assets/Art/UI/ui_icon_pause.png"); g.miteMat = miteMat;
 
     var ga = new GameObject("GameAudio").AddComponent<GameAudio>();
     ga.music = Load<AudioClip>("Assets/Audio/Music/theme1_loop.ogg");
