@@ -222,7 +222,11 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      fx_hit_spark_sheet_0: -978123190958100142
+      fx_hit_spark_sheet_1: -374044175893729869
+      fx_hit_spark_sheet_2: -808432909093604223
+      fx_hit_spark_sheet_3: -590343980627121967
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -6,7 +6,7 @@ Everything here is original, generated procedurally for this project. Nearly eve
 
 Keep the background near-black (#04030A) and turn on URP Bloom for the neon look.
 
-Sprites are 100 PPU, pivot at centre, no mipmaps, clamp wrap. Tunnel wall textures are Default type with Repeat wrap and mipmaps. The `.meta` files are included. Unity generates the OBJ metas.
+Sprites are 100 PPU, pivot at centre, no mipmaps, clamp wrap. Tunnel wall textures are Default type with Repeat wrap and mipmaps. All `.meta` files (including the OBJ and folder metas) are included, re-serialized by Unity 6000.3.26f1.
 
 ## Themes
 
@@ -24,7 +24,7 @@ To make bugs look tougher across themes, use the same sprites with a different t
 | Path | What / how |
 |---|---|
 | `ion_drift_wall.png`, `acid_hive_wall.png`, `redline_core_wall.png` | 256² seamless wireframe wall tiles: grid with ring seam, honeycomb, and forward-pointing chevrons with circuit traces. White on transparent. Tint per theme and scroll the material's V offset to fake forward speed. |
-| `ion_drift_ring.obj` (24 sides), `acid_hive_ring.obj` (6), `redline_core_ring.obj` (4) | Open tube segment, radius 5, length 4 along +Z, normals facing inward. UV U wraps once per face (12× on the round ring) and V = 0..1 over the length, so the wall tile repeats once per face. Chain segments along Z or use one long scaled segment. If faces are culled from inside, set Render Face = Both on the material. |
+| `ion_drift_ring.obj` (24 sides), `acid_hive_ring.obj` (6), `redline_core_ring.obj` (4) | Open tube segment, radius 5, length 4 along +Z, normals facing inward. UV U wraps once per face (12× on the round ring) and V = 0..1 over the length, so the wall tile repeats once per face. Chain segments along Z or use one long scaled segment. |
 
 ### Ship (`Ship/`)
 - `player_ship.png` (256²): delta-wing fighter seen from behind, nose up (+Y). Rotate it around the tunnel axis so +Y points toward the tunnel centre. Usually left white.
