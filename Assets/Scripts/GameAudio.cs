@@ -8,6 +8,7 @@ namespace NeonHive {
   public class GameAudio : MonoBehaviour {
     public static GameAudio I;
     public AudioClip music, shot, bugHit, bugExplode, playerHit, lifeLost;
+    public AudioClip spread, laser, plasma, homing, pickup, extraLife, levelStart, levelClear, bossWarning, bossHit, bossExplode, enemyShot;
     [Range(0, 1)] public float musicVolume = 0.4f, sfxVolume = 0.8f;
     const int MaxSame = 3, MaxTotal = 8;
     static bool unlocked;
@@ -22,7 +23,11 @@ namespace NeonHive {
       sfx = gameObject.AddComponent<AudioSource>(); sfx.playOnAwake = false; sfx.volume = 1f;
       shotSrc = gameObject.AddComponent<AudioSource>(); shotSrc.playOnAwake = false; shotSrc.volume = 1f;
       void R(string id, AudioClip c, float v, float g){ rules[id] = new Rule{ clip = c, vol = v, gap = g }; }
-      R("shot", shot, 0.315f, 0.06f);   // -30% vs M1, random pitch 0.95-1.05 R("bugHit", bugHit, 0.6f, 0.04f); R("bugExplode", bugExplode, 0.7f, 0.05f);
+      R("shot", shot, 0.315f, 0.06f);   // -30% vs M1, random pitch 0.95-1.05
+      R("bugHit", bugHit, 0.6f, 0.04f); R("bugExplode", bugExplode, 0.7f, 0.05f);   // (M1 had these two swallowed by the comment above)
+      R("spread", spread, 0.3f, 0.12f); R("laser", laser, 0.3f, 0.14f); R("plasma", plasma, 0.28f, 0.1f); R("homing", homing, 0.3f, 0.14f);
+      R("pickup", pickup, 0.8f, 0.2f); R("extraLife", extraLife, 0.85f, 0.5f); R("levelStart", levelStart, 0.7f, 1f); R("levelClear", levelClear, 0.75f, 1f);
+      R("bossWarning", bossWarning, 0.85f, 1f); R("bossHit", bossHit, 0.45f, 0.09f); R("bossExplode", bossExplode, 0.9f, 1f); R("enemyShot", enemyShot, 0.4f, 0.1f);
       R("playerHit", playerHit, 0.9f, 0.3f); R("lifeLost", lifeLost, 0.8f, 0.5f);
     }
     void Start(){ if (unlocked && mus.clip) mus.Play(); }
@@ -45,7 +50,7 @@ namespace NeonHive {
       int same = 0; foreach (var v in voices) if (v.clip == r.clip) same++;
       if (same >= MaxSame || voices.Count >= MaxTotal) return;
       voices.Add((now + r.clip.length, r.clip)); last[id] = now;
-      if (id == "shot"){ shotSrc.pitch = Random.Range(0.95f, 1.05f); shotSrc.PlayOneShot(r.clip, r.vol * sfxVolume); }
+      if (id == "shot" || id == "spread" || id == "laser" || id == "plasma" || id == "homing"){ shotSrc.pitch = Random.Range(0.95f, 1.05f); shotSrc.PlayOneShot(r.clip, r.vol * sfxVolume); }
       else sfx.PlayOneShot(r.clip, r.vol * sfxVolume);
     }
   }

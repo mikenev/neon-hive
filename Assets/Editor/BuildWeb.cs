@@ -76,6 +76,11 @@ public static class BuildWeb {
     g.tunnel = tunnel; g.cam = cam; g.spriteMat = spriteMat;
     g.shipSprite = Load<Sprite>("Assets/Art/Ship/player_ship.png"); g.miteSprite = Load<Sprite>("Assets/Art/Enemies/bug_mite.png");
     g.bulletSprite = Load<Sprite>("Assets/Art/FX/fx_bullet.png");
+    g.waspSprite = Load<Sprite>("Assets/Art/Enemies/bug_wasp.png"); g.spinnerSprite = Load<Sprite>("Assets/Art/Enemies/bug_spinner.png");
+    g.bossSprite = Load<Sprite>("Assets/Art/Bosses/boss_prism_moth.png"); g.enemyBulletSprite = Load<Sprite>("Assets/Art/FX/fx_enemy_bullet.png");
+    g.glowSprite = Load<Sprite>("Assets/Art/FX/fx_pickup_glow.png");
+    g.spreadSprite = Load<Sprite>("Assets/Art/PowerUps/pickup_spread.png"); g.laserSprite = Load<Sprite>("Assets/Art/PowerUps/pickup_laser.png");
+    g.rapidSprite = Load<Sprite>("Assets/Art/PowerUps/pickup_rapid.png"); g.homingSprite = Load<Sprite>("Assets/Art/PowerUps/pickup_homing.png");
     g.explosion = Frames("Assets/Art/FX/fx_explosion_sheet.png"); g.spark = Frames("Assets/Art/FX/fx_hit_spark_sheet.png");
     g.iconLife = Load<Texture2D>("Assets/Art/UI/ui_icon_life.png"); g.iconScore = Load<Texture2D>("Assets/Art/UI/ui_icon_score.png");
     g.iconPause = Load<Texture2D>("Assets/Art/UI/ui_icon_pause.png"); g.miteMat = miteMat;
@@ -85,6 +90,10 @@ public static class BuildWeb {
     ga.shot = Load<AudioClip>("Assets/Audio/SFX/player_shot.ogg"); ga.bugHit = Load<AudioClip>("Assets/Audio/SFX/bug_hit.ogg");
     ga.bugExplode = Load<AudioClip>("Assets/Audio/SFX/bug_explode.ogg"); ga.playerHit = Load<AudioClip>("Assets/Audio/SFX/player_hit.ogg");
     ga.lifeLost = Load<AudioClip>("Assets/Audio/SFX/life_lost.ogg");
+    AudioClip Sfx(string n) => Load<AudioClip>($"Assets/Audio/SFX/{n}.ogg");
+    ga.spread = Sfx("weapon_spread"); ga.laser = Sfx("weapon_laser"); ga.plasma = Sfx("weapon_plasma"); ga.homing = Sfx("weapon_homing");
+    ga.pickup = Sfx("powerup_pickup"); ga.extraLife = Sfx("extra_life"); ga.levelStart = Sfx("level_start"); ga.levelClear = Sfx("level_clear");
+    ga.bossWarning = Sfx("boss_warning"); ga.bossHit = Sfx("boss_hit"); ga.bossExplode = Sfx("boss_explode"); ga.enemyShot = Sfx("enemy_shot");
 
     EditorSceneManager.SaveScene(scene, ScenePath);
     EditorBuildSettings.scenes = new[]{ new EditorBuildSettingsScene(ScenePath, true) };
