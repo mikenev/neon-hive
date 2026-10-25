@@ -1,0 +1,7 @@
+<linker>
+  <!-- Keep game code and the URP post-processing types referenced only from serialized assets (WebGL stripping). -->
+  <assembly fullname="Assembly-CSharp" preserve="all"/>
+  <assembly fullname="Unity.RenderPipelines.Universal.Runtime">
+    <type fullname="UnityEngine.Rendering.Universal.Bloom" preserve="all"/>
+  </assembly>
+</linker>
