@@ -7,7 +7,7 @@ namespace NeonHive {
   /// twist are the start defaults (levels override them through Track.SetShape). Rings use the theme's primary colour,
   /// with secondary and accent rings, at HDR intensity for Bloom.</summary>
   public class Tunnel : MonoBehaviour {
-    public Mesh[] ringMeshes; public Texture2D[] wallTextures; public float[] ringScale = { 1f, 1.08f, 1.3f };
+    public Mesh[] ringMeshes; public Texture2D[] wallTextures; public float[] ringScale = { 1f, 1.08f, 1.3f }, themeIntensity = { 1.5f, 0.75f, 1.5f };   // the honeycomb wall is dense: dimmer so bugs read
     public Material ringMat;
     [Range(0f, 3f)] public float curveAmount = 0.8f;
     [Tooltip("Frame roll in degrees per unit of distance")] public float twist = 0f;
@@ -42,7 +42,7 @@ namespace NeonHive {
         float s = idx * segLen;
         ring.t.SetPositionAndRotation(Track.P(s), Track.Frame(s + segLen * 0.5f));
         ring.t.localScale = new Vector3(k, k, Track.Stretch(s + segLen * 0.5f));
-        mpb.SetColor(ColorId, TintFor(idx) * intensity);
+        mpb.SetColor(ColorId, TintFor(idx) * (theme < themeIntensity.Length ? themeIntensity[theme] : intensity));
         var tex = theme < wallTextures.Length ? wallTextures[theme] : null; if (tex) mpb.SetTexture(TexId, tex);
         ring.r.SetPropertyBlock(mpb);
         rings[slot] = (ring.t, ring.r, ring.f, idx);
