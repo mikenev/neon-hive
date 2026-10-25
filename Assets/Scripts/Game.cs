@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace NeonHive {
-  public enum GameState { Ready, Playing, Paused, GameOver, ThemeClear }
+  public enum GameState { Ready, Select, Playing, Paused, GameOver, ThemeClear, Win }
 
-  /// <summary>Neon Hive core loop (M2: the Ion Drift theme start to finish). Everything lives in tunnel space: s = distance
+  /// <summary>Neon Hive core loop (M3: three themes, Ion Drift → Acid Hive → Redline Core, 12 levels and 3 bosses; menus:
+  /// title, theme select (unlocked themes, PlayerPrefs), pause, game over, theme clear and a final win screen). Everything lives in tunnel space: s = distance
   /// along the Track, ang = degrees around the axis (-90 = bottom). The ship (billboard) circles the inner wall at shipR
-  /// and fires bolts down the tunnel. Four authored levels (IonDrift.Levels: timed waves of Mites, Wasps and Spinners, the
+  /// and fires bolts down the tunnel. Per theme four authored levels (Levels.cs: timed waves of Mites, Wasps, Spinners, Beetles, the
   /// curve / twist per level), each ending in a level clear, then the Prism Moth boss (bullet fans + Mite spawns) and a
   /// Theme clear screen. Power-ups (spread / laser / rapid / homing) drop from bugs and last PowerTime or until a life is
   /// lost. Score per bug + boss bonus, an extra life every ExtraLifeEvery points, a local high score (PlayerPrefs).
@@ -17,23 +18,24 @@ namespace NeonHive {
     [Header("Refs (set by BuildWeb.SetupScene)")]
     public Tunnel tunnel; public Camera cam; public Material spriteMat, miteMat;
     public Sprite shipSprite, miteSprite, waspSprite, spinnerSprite, bossSprite, bulletSprite, enemyBulletSprite, glowSprite;
-    public Sprite spreadSprite, laserSprite, rapidSprite, homingSprite; public Sprite[] explosion, spark;
-    public Texture2D iconLife, iconScore, iconPause, logo;
+    public Sprite spreadSprite, laserSprite, rapidSprite, homingSprite, beetleSprite; public Sprite[] explosion, spark, bossSprites;
+    public Texture2D iconLife, iconScore, iconPause, logo, uiButton, uiButtonHi, uiPanel;
+    public AudioClip menuMusic; public AudioClip[] themeMusic;
     [Header("Tuning")]
     public float speed = 14f, shipR = 4.1f, turnSpeed = 170f, camBack = 9f, lookAhead = 22f;
     public float fireInterval = 0.13f, boltSpeed = 62f, boltLife = 1.3f, spawnAhead = 75f;
     public int startLives = 3, extraLifeEvery = 10000; public float invulnTime = 1.6f, hitDs = 1.1f, hitArc = 1.05f, powerTime = 12f;
-    public float bossMaxHp = 480f, bossDist = 26f;
+    public float bossDist = 26f;
     public Color shipTint = Color.white, uiTint = new Color32(0x00, 0xF0, 0xFF, 255), boltTint = new Color32(0xFF, 0x2B, 0xD6, 255), fxTint = new Color32(0x3D, 0x7B, 0xFF, 255);
     public Color miteTint = new Color32(0xFF, 0xE1, 0x4D, 255), waspTint = new Color32(0x9D, 0xFF, 0x00, 255), spinnerTint = new Color32(0xFF, 0x2E, 0x4D, 255);
-    public Color enemyBulletTint = new Color32(0xFF, 0x8A, 0x3D, 255), bossTint = new Color32(0xFF, 0x2B, 0xD6, 255);
+    public Color enemyBulletTint = new Color32(0xFF, 0x8A, 0x3D, 255), bossTint = new Color32(0xFF, 0x2B, 0xD6, 255), beetleTint = new Color32(0xFF, 0xB3, 0x00, 255);
 
     public GameState State { get; private set; } = GameState.Ready;
     public int Score { get; private set; } public int Lives { get; private set; } public int High { get; private set; }
     public float S { get; private set; } public float Ang { get; private set; } = -90f;
     public PowerKind Power { get; private set; }
     enum Phase { Intro, Waves, Clear, BossIntro, Boss, BossDying }
-    Phase phase; int level; float phaseT, levelTime, powerLeft; int nextExtra; bool newHigh;
+    Phase phase; int level, theme, unlockedTheme, sel; float phaseT, levelTime, powerLeft; int nextExtra; bool newHigh;
     class Bug { public Transform t; public SpriteRenderer sr; public BugKind kind; public float s, ang, speed, hp, age, phase, holdT, fireCd; public bool held; }
     class Bolt { public Transform t; public float s, ang, age, speed, dmg; public bool pierce, homing; public List<Bug> hit; }
     class EBullet { public Transform t; public float s, ang, r0, s0, sEnd; }
@@ -49,13 +51,23 @@ namespace NeonHive {
     bool touchConsumed;   // this touch started/ended a screen or hit the pause button: no turning or auto-fire until released
     bool holdFire;        // after start / restart / resume: no fire until every fire input has been released
     static Sprite fallback;
-    const string HighKey = "nh_highscore";
+    const string HighKey = "nh_highscore", UnlockKey = "nh_unlocked";
+    ThemeDef T => Themes.All[theme]; LevelDef L => T.levels[level]; BossDef B => T.boss; float bossMaxHp => B.hp;
 
-    void Awake(){ I = this; Lives = startLives; High = PlayerPrefs.GetInt(HighKey, 0); }
+    void Awake(){ I = this; Lives = startLives; High = PlayerPrefs.GetInt(HighKey, 0); unlockedTheme = Mathf.Clamp(PlayerPrefs.GetInt(UnlockKey, 0), 0, Themes.All.Length - 1); }
     void Start(){
       ship = MakeSprite("Ship", shipSprite, shipTint, 1.4f, out shipSr).transform;
-      boss = MakeSprite("PrismMoth", bossSprite, bossTint, 8f, out bossSr).transform; boss.gameObject.SetActive(false);
-      S = 0f; Place(); Debug.Log($"[NH] ready high={High} levels={IonDrift.Levels.Length}");
+      boss = MakeSprite("Boss", bossSprite, bossTint, 8f, out bossSr).transform; boss.gameObject.SetActive(false);
+      ApplyTheme(0); GameAudio.I?.SetMusic(menuMusic);
+      S = 0f; Place(); Debug.Log($"[NH] ready high={High} levels={Themes.All.Length * 4} unlocked={unlockedTheme + 1}");
+    }
+    /// <summary>Look of theme t: tunnel ring shape / wall / colours, HUD + bolt + FX tints, bug tints, boss sprite.</summary>
+    void ApplyTheme(int t){
+      theme = t; var d = T;
+      tunnel.SetTheme(t, d.primary, d.secondary, d.accent);
+      uiTint = d.primary; boltTint = d.secondary; fxTint = d.accent; waspTint = d.wasp; spinnerTint = d.spinner; bossTint = d.boss_;
+      if (bossSprites != null && t < bossSprites.Length && bossSprites[t]) bossSr.sprite = bossSprites[t];
+      big = null; Debug.Log($"[NH] theme {t + 1} \"{d.name}\" boss={d.boss.name} hp={d.boss.hp}");
     }
     void LogOnce(string key, string msg){ if (once.Add(key)) Debug.Log(msg); }
 
@@ -136,22 +148,80 @@ namespace NeonHive {
       touching = now; return d;
     }
 
+    // ---------------- menus ----------------
+    /// <summary>Buttons of the current screen (GUI units, 720 high, centred column).</summary>
+    string[] Buttons(){
+      switch (State){
+        case GameState.Ready: return new[]{ "PLAY", "SELECT THEME" };
+        case GameState.Select: { var b = new string[Themes.All.Length + 1]; for (int i = 0; i < Themes.All.Length; i++) b[i] = i <= unlockedTheme ? $"{i + 1}  {Themes.All[i].name.ToUpper()}" : $"{i + 1}  LOCKED"; b[^1] = "BACK"; return b; }
+        case GameState.Paused: return new[]{ "RESUME", "TITLE" };
+        case GameState.GameOver: return new[]{ "RETRY", "TITLE" };
+        case GameState.ThemeClear: return new[]{ "CONTINUE", "TITLE" };
+        case GameState.Win: return new[]{ "PLAY AGAIN", "TITLE" };
+      }
+      return null;
+    }
+    float MenuTop => State == GameState.Ready ? 400f : State == GameState.Select ? 230f : 470f;
+    Rect BtnRect(int i){ float W = Screen.width / (Screen.height / 720f); return new Rect(W * 0.5f - 190f, MenuTop + i * 74f, 380f, 62f); }
+    bool BtnEnabled(int i) => State != GameState.Select || i >= Themes.All.Length || i <= unlockedTheme;
+    /// <summary>Menu input: up / down (keys, d-pad) move the highlight, Space / Enter / A pick it, a click or tap picks
+    /// the button under it. Returns the picked index, -2 for a click / tap outside every button, else -1.</summary>
+    int MenuInput(string[] btns){
+      var kb = Keyboard.current; var gp = Gamepad.current; int n = btns.Length; int dir = 0;
+      if (kb != null){ if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) dir = -1; if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) dir = 1; }
+      if (gp != null){ if (gp.dpad.up.wasPressedThisFrame) dir = -1; if (gp.dpad.down.wasPressedThisFrame) dir = 1; }
+      if (dir != 0){ for (int k = 0; k < n; k++){ sel = (sel + dir + n) % n; if (BtnEnabled(sel)) break; } GameAudio.I?.Play("menuMove"); }
+      Vector2 p; var ts = Touchscreen.current; var ms = Mouse.current; bool pointer = true;
+      if (ts != null && ts.primaryTouch.press.wasPressedThisFrame) p = ts.primaryTouch.position.ReadValue();
+      else if (ms != null && ms.leftButton.wasPressedThisFrame) p = ms.position.ReadValue();
+      else { p = default; pointer = false; }
+      if (pointer){
+        float sc = Screen.height / 720f; var g = new Vector2(p.x / sc, (Screen.height - p.y) / sc);
+        for (int i = 0; i < n; i++) if (BtnRect(i).Contains(g)){ if (!BtnEnabled(i)) return -1; sel = i; GameAudio.I?.Play("menuSelect"); return i; }
+        return -2;
+      }
+      bool pick = (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) || (gp != null && gp.buttonSouth.wasPressedThisFrame);
+      if (pick && BtnEnabled(sel)){ GameAudio.I?.Play("menuSelect"); return sel; }
+      return -1;
+    }
+    void Screen_(GameState st){ State = st; sel = 0; overAt = Time.unscaledTime; if (st == GameState.Ready || st == GameState.Select) GameAudio.I?.SetMusic(menuMusic); }
+    void ToTitle(){ Time.timeScale = 1f; ClearField(); Power = PowerKind.None; Screen_(GameState.Ready); Debug.Log("[NH] title"); }
+
     // ---------------- loop ----------------
     void Update(){
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
       DevKeys();
 #endif
+      int m;
       switch (State){
-        case GameState.Ready: if (FirePressed()){ StartRun(); GoPlay("start"); } break;
-        case GameState.Paused: if (PausePressed() || PauseButtonPressed() || TouchBegan()) GoPlay("resumed"); break;
-        case GameState.GameOver: case GameState.ThemeClear:
+        case GameState.Ready:
+          m = MenuInput(Buttons());
+          if (m == 0){ StartRun(0); GoPlay("start"); } else if (m == 1){ Screen_(GameState.Select); Debug.Log("[NH] select"); }
+          break;
+        case GameState.Select:
+          m = MenuInput(Buttons());
+          if (m >= 0 && m < Themes.All.Length){ StartRun(m); GoPlay("start"); }
+          else if (m == Themes.All.Length || PausePressed()){ Screen_(GameState.Ready); }
+          break;
+        case GameState.Paused:
+          m = MenuInput(Buttons());
+          if (m == 1){ ToTitle(); break; }
+          if (m == 0 || m == -2 || PausePressed()) GoPlay("resumed");
+          break;
+        case GameState.GameOver: case GameState.ThemeClear: case GameState.Win:
           TouchTurn();
-          if (Time.unscaledTime - overAt > 0.8f && FirePressed()){ StartRun(); GoPlay("restart"); }
+          if (Time.unscaledTime - overAt < 0.8f) break;
+          m = MenuInput(Buttons());
+          if (m == 1) ToTitle();
+          else if (m == 0){
+            if (State == GameState.ThemeClear){ NextTheme(); GoPlay("continue"); }
+            else { StartRun(State == GameState.Win ? 0 : theme); GoPlay("restart"); }
+          }
           break;
         case GameState.Playing:
           if (PausePressed() || PauseButtonPressed()){
             if (TouchBegan()) touchConsumed = true;
-            State = GameState.Paused; Time.timeScale = 0f; Debug.Log($"[NH] paused shots={shots} ang={Ang:0}"); break;
+            State = GameState.Paused; sel = 0; Time.timeScale = 0f; Debug.Log($"[NH] paused shots={shots} ang={Ang:0}"); break;
           }
           Tick(Time.deltaTime); break;
       }
@@ -159,9 +229,16 @@ namespace NeonHive {
     }
 
     // ---------------- run / levels / boss ----------------
-    void StartRun(){
+    void StartRun(int t){
+      ApplyTheme(t); GameAudio.I?.SetMusic(themeMusic != null && t < themeMusic.Length ? themeMusic[t] : null);
       ClearField(); Score = 0; Lives = startLives; nextExtra = extraLifeEvery; Power = PowerKind.None; invuln = invulnTime; newHigh = false;
       once.Clear(); BeginLevel(0);
+    }
+    /// <summary>After a theme clear: on to the next theme's level 1, keeping score and lives.</summary>
+    void NextTheme(){
+      int t = Mathf.Min(theme + 1, Themes.All.Length - 1);
+      ApplyTheme(t); GameAudio.I?.SetMusic(themeMusic != null && t < themeMusic.Length ? themeMusic[t] : null);
+      ClearField(); Power = PowerKind.None; invuln = invulnTime; BeginLevel(0);
     }
     void ClearField(){
       foreach (var x in bugs) Destroy(x.t.gameObject); foreach (var x in bolts) Destroy(x.t.gameObject); foreach (var x in ebullets) Destroy(x.t.gameObject);
@@ -171,20 +248,20 @@ namespace NeonHive {
     }
     void BeginLevel(int i){
       level = i; phase = Phase.Intro; phaseT = 0f; levelTime = 0f; pending.Clear();
-      var L = IonDrift.Levels[i]; Track.SetShape(L.curve, L.twist, S + 110f);
+      var L = T.levels[i]; Track.SetShape(L.curve, L.twist, S + 110f);
       foreach (var w in L.waves){
         float baseAng = Random.Range(-180f, 180f);
         for (int k = 0; k < w.count; k++) pending.Add((w.at + k * w.interval, w.bug, baseAng + Random.Range(-w.spread, w.spread)));
       }
       pending.Sort((a, b) => a.t.CompareTo(b.t));
-      GameAudio.I?.Play("levelStart"); Debug.Log($"[NH] level {i + 1} start \"{L.name}\" curve={L.curve} twist={L.twist} bugs={pending.Count}");
+      GameAudio.I?.Play("levelStart"); Debug.Log($"[NH] level {theme * 4 + i + 1} start \"{L.name}\" theme={T.name} curve={L.curve} twist={L.twist} speed={L.bugSpeed} bugs={pending.Count}");
     }
     void BeginBoss(){
-      phase = Phase.BossIntro; phaseT = 0f; GameAudio.I?.Play("bossWarning"); Debug.Log("[NH] boss warning");
+      phase = Phase.BossIntro; phaseT = 0f; GameAudio.I?.Play("bossWarning"); Debug.Log($"[NH] boss warning {B.name}");
     }
     void SpawnBoss(){
       phase = Phase.Boss; bossAlive = true; bossHp = bossMaxHp; bossS = S + bossDist + 25f; bossAge = 0f; bossCd = 2.5f; bossPattern = 0; bossTime = 0f;
-      boss.gameObject.SetActive(true); Debug.Log($"[NH] boss start hp={bossMaxHp}");
+      boss.gameObject.SetActive(true); Debug.Log($"[NH] boss start {B.name} hp={bossMaxHp}");
     }
     void Tick(float dt){
       if (dt <= 0f) return;   // frozen (dev showcase)
@@ -204,17 +281,19 @@ namespace NeonHive {
           while (pending.Count > 0 && pending[0].t <= levelTime){ SpawnBug(pending[0].kind, S + spawnAhead, pending[0].ang); pending.RemoveAt(0); }
           if (pending.Count == 0 && bugs.Count == 0){
             phase = Phase.Clear; phaseT = 0f; AddScore(500); GameAudio.I?.Play("levelClear");
-            Debug.Log($"[NH] level {level + 1} clear score={Score} lives={Lives} time={levelTime:0}s");
+            Debug.Log($"[NH] level {theme * 4 + level + 1} clear score={Score} lives={Lives} time={levelTime:0}s");
           }
           break;
-        case Phase.Clear: if (phaseT > 2.5f){ if (level < IonDrift.Levels.Length - 1) BeginLevel(level + 1); else BeginBoss(); } break;
+        case Phase.Clear: if (phaseT > 2.5f){ if (level < T.levels.Length - 1) BeginLevel(level + 1); else BeginBoss(); } break;
         case Phase.BossIntro: if (phaseT > 3f) SpawnBoss(); break;
         case Phase.Boss: BossTick(dt); break;
         case Phase.BossDying:
           if (Random.value < dt * 10f) AddFx(explosion, 20f, bossS + Random.Range(-2f, 2f), Random.Range(-180f, 180f), Random.Range(0f, 3f), 3f);
           if (phaseT > 2.2f){
-            boss.gameObject.SetActive(false); State = GameState.ThemeClear; overAt = Time.unscaledTime; SaveHigh();
-            Debug.Log($"[NH] theme clear score={Score} high={High} new={newHigh} lives={Lives}");
+            boss.gameObject.SetActive(false); SaveHigh();
+            if (theme + 1 > unlockedTheme && theme + 1 < Themes.All.Length){ unlockedTheme = theme + 1; PlayerPrefs.SetInt(UnlockKey, unlockedTheme); PlayerPrefs.Save(); }
+            Screen_(theme < Themes.All.Length - 1 ? GameState.ThemeClear : GameState.Win);
+            Debug.Log($"[NH] {(State == GameState.Win ? "win" : "theme clear")} theme={theme + 1} score={Score} high={High} new={newHigh} lives={Lives} unlocked={unlockedTheme + 1}");
           }
           break;
       }
@@ -225,16 +304,24 @@ namespace NeonHive {
       bossAge += dt; bossTime += dt; bossFlash -= dt;
       bossS = Mathf.Lerp(bossS, S + bossDist + Mathf.Sin(bossAge * 0.7f) * 3f, 1f - Mathf.Exp(-dt * 1.5f));
       if ((bossCd -= dt) > 0f) return;
-      bool enraged = bossHp < bossMaxHp * 0.5f;
-      if (bossPattern % 3 < 2){   // bullet fan around the ship's angle
-        int n = enraged ? 5 : 3; float spreadDeg = enraged ? 36f : 24f, off = Random.Range(-8f, 8f);
+      bool enraged = bossHp < bossMaxHp * 0.5f; var d = B;
+      // cycle: fan, fan, ring (Prism Moth, Hive Queen) or fan, burst, fan, ring (Core Scarab)
+      int slot = d.extra == 2 ? bossPattern % 4 : bossPattern % 3;
+      bool fan = d.extra == 2 ? slot == 0 || slot == 2 : slot < 2, burst = d.extra == 2 && slot == 1;
+      if (fan){                   // bullet fan around the ship's angle
+        int n = enraged ? d.fanNRage : d.fanN; float spreadDeg = enraged ? d.fanDegRage : d.fanDeg, off = Random.Range(-8f, 8f);
         for (int k = 0; k < n; k++) FireEnemyBullet(bossS - 1f, Ang + off + Mathf.Lerp(-spreadDeg, spreadDeg, k / (n - 1f)), 0f);
-        GameAudio.I?.Play("enemyShot"); LogOnce("bossfan", $"[NH] boss pattern fan n={n}");
-        bossCd = enraged ? 2.4f : 2.9f;
-      } else {                    // spawn a ring of Mites
-        int n = enraged ? 4 : 3; float a0 = Random.Range(-180f, 180f);
-        for (int k = 0; k < n; k++) SpawnBug(BugKind.Mite, bossS - 2f, a0 + k * 360f / n);
-        LogOnce("bossmites", $"[NH] boss pattern mites n={n}"); bossCd = enraged ? 2.6f : 3.2f;
+        GameAudio.I?.Play("enemyShot"); LogOnce("bossfan" + d.name + enraged, $"[NH] boss pattern fan n={n} deg={spreadDeg} cd={(enraged ? d.fanCdRage : d.fanCd)}");
+        bossCd = enraged ? d.fanCdRage : d.fanCd;
+      } else if (burst){          // evenly spaced radial burst with wide gaps to slip through
+        int n = enraged ? d.burstNRage : d.burstN; float a0 = Random.Range(-180f, 180f);
+        for (int k = 0; k < n; k++) FireEnemyBullet(bossS - 1f, a0 + k * 360f / n, 0f);
+        GameAudio.I?.Play("enemyShot"); LogOnce("bossburst" + d.name + enraged, $"[NH] boss pattern burst n={n}");
+        bossCd = enraged ? d.fanCdRage : d.fanCd;
+      } else {                    // spawn a ring of Mites (+ Wasps for the Hive Queen's brood)
+        int n = enraged ? d.ringNRage : d.ringN, w = d.wasps, all = n + w; float a0 = Random.Range(-180f, 180f);
+        for (int k = 0; k < all; k++) SpawnBug(k < n ? BugKind.Mite : BugKind.Wasp, bossS - 2f, a0 + k * 360f / all);
+        LogOnce("bossmites" + d.name + enraged, $"[NH] boss pattern mites n={n} wasps={w}"); bossCd = enraged ? d.ringCdRage : d.ringCd;
       }
       bossPattern++;
     }
@@ -246,17 +333,17 @@ namespace NeonHive {
         bossAlive = false; phase = Phase.BossDying; phaseT = 0f; GameAudio.I?.Play("bossExplode"); AddScore(5000);
         foreach (var x in ebullets) Destroy(x.t.gameObject); ebullets.Clear();
         for (int i = bugs.Count - 1; i >= 0; i--) Kill(bugs[i], false);
-        Debug.Log($"[NH] boss defeated time={bossTime:0.0}s score={Score} lives={Lives}");
+        Debug.Log($"[NH] boss defeated {B.name} time={bossTime:0.0}s score={Score} lives={Lives}");
       }
     }
 
     // ---------------- bugs ----------------
     void SpawnBug(BugKind k, float s, float ang){
-      Sprite sp = k == BugKind.Wasp ? waspSprite : k == BugKind.Spinner ? spinnerSprite : miteSprite;
-      Color c = k == BugKind.Wasp ? waspTint : k == BugKind.Spinner ? spinnerTint : miteTint;
-      var go = MakeSprite(k.ToString(), sp, c, k == BugKind.Spinner ? 2.0f : 1.7f, out var sr); if (miteMat) sr.sharedMaterial = miteMat;
-      float spd = k == BugKind.Wasp ? 19f : k == BugKind.Spinner ? 9f : 13f;
-      bugs.Add(new Bug{ t = go.transform, sr = sr, kind = k, s = s, ang = ang, speed = spd * (phase >= Phase.BossIntro ? 1.1f : IonDrift.Levels[level].bugSpeed) * Random.Range(0.85f, 1.15f), hp = k == BugKind.Spinner ? 4f : 1f,
+      Sprite sp = k == BugKind.Wasp ? waspSprite : k == BugKind.Spinner ? spinnerSprite : k == BugKind.Beetle ? beetleSprite : miteSprite;
+      Color c = k == BugKind.Wasp ? waspTint : k == BugKind.Spinner ? spinnerTint : k == BugKind.Beetle ? beetleTint : miteTint;
+      var go = MakeSprite(k.ToString(), sp, c, (k == BugKind.Spinner ? 2.0f : k == BugKind.Beetle ? 2.2f : 1.7f) * T.bugScale, out var sr); if (miteMat) sr.sharedMaterial = miteMat;
+      float spd = k == BugKind.Wasp ? 19f : k == BugKind.Spinner ? 9f : k == BugKind.Beetle ? 8f : 13f;
+      bugs.Add(new Bug{ t = go.transform, sr = sr, kind = k, s = s, ang = ang, speed = spd * (phase >= Phase.BossIntro ? 1.1f : L.bugSpeed) * Random.Range(0.85f, 1.15f), hp = k == BugKind.Spinner ? 4f : k == BugKind.Beetle ? 6f : 1f,
                         phase = Random.Range(0f, 6.28f), fireCd = 0.6f });
       LogOnce("bug" + k, $"[NH] bug spawned {k}");
     }
@@ -265,6 +352,7 @@ namespace NeonHive {
         var b = bugs[i]; b.age += dt;
         switch (b.kind){
           case BugKind.Mite: b.s -= b.speed * dt; b.ang = Mathf.MoveTowardsAngle(b.ang, Ang, 22f * dt); break;
+          case BugKind.Beetle: b.s -= b.speed * dt; b.ang = Mathf.MoveTowardsAngle(b.ang, Ang, 14f * dt); break;   // slow armoured tank
           case BugKind.Wasp: b.s -= b.speed * dt; b.ang += Mathf.Cos(b.age * 2.6f + b.phase) * 95f * dt; b.ang = Mathf.MoveTowardsAngle(b.ang, Ang, 8f * dt); break;
           case BugKind.Spinner:
             if (!b.held && b.s - S > 30f) b.s -= b.speed * dt;
@@ -288,9 +376,9 @@ namespace NeonHive {
       AddFx(spark, 24f, b.s, b.ang, shipR, 0.9f); AddFx(explosion, 20f, b.s, b.ang, shipR, 2.0f);
       GameAudio.I?.Play("bugHit"); GameAudio.I?.Play("bugExplode");
       if (!score) return;
-      AddScore(b.kind == BugKind.Wasp ? 150 : b.kind == BugKind.Spinner ? 300 : 100);
+      AddScore(b.kind == BugKind.Wasp ? 150 : b.kind == BugKind.Spinner ? 300 : b.kind == BugKind.Beetle ? 250 : 100);
       LogOnce("kill" + b.kind, $"[NH] {b.kind.ToString().ToLower()} killed score={Score}");
-      float drop = b.kind == BugKind.Spinner ? 0.25f : b.kind == BugKind.Wasp ? 0.08f : 0.04f;
+      float drop = b.kind == BugKind.Spinner ? 0.25f : b.kind == BugKind.Beetle ? 0.15f : b.kind == BugKind.Wasp ? 0.08f : 0.04f;
       if (pickups.Count == 0 && phase != Phase.Boss && Random.value < drop) SpawnPickup(b.s, b.ang);
     }
 
@@ -372,8 +460,8 @@ namespace NeonHive {
     void PlayerHit(string by){
       Lives--; invuln = invulnTime; GameAudio.I?.Play("playerHit"); GameAudio.I?.Play("lifeLost");
       if (Power != PowerKind.None){ Debug.Log($"[NH] powerup lost {Power}"); Power = PowerKind.None; }
-      Debug.Log($"[NH] life lost lives={Lives} by={by} level={level + 1} phase={phase}");
-      if (Lives <= 0){ State = GameState.GameOver; overAt = Time.unscaledTime; SaveHigh(); Debug.Log($"[NH] game over score={Score} high={High} new={newHigh} level={level + 1} phase={phase}"); }
+      Debug.Log($"[NH] life lost lives={Lives} by={by} level={theme * 4 + level + 1} phase={phase}");
+      if (Lives <= 0){ Screen_(GameState.GameOver); SaveHigh(); Debug.Log($"[NH] game over score={Score} high={High} new={newHigh} level={theme * 4 + level + 1} phase={phase}"); }
     }
     void SaveHigh(){ if (Score > High){ High = Score; newHigh = true; PlayerPrefs.SetInt(HighKey, High); PlayerPrefs.Save(); } }
     void AddFx(Sprite[] frames, float fps, float s, float ang, float r, float size){
@@ -411,18 +499,34 @@ namespace NeonHive {
     }
 
     // ---------------- HUD ----------------
-    GUIStyle big, mid;
+    GUIStyle big, mid, btn, btnHi, panel;
+    void DrawButtons(){
+      var bs = Buttons(); if (bs == null) return;
+      for (int i = 0; i < bs.Length; i++){
+        var st = i == sel && BtnEnabled(i) ? btnHi : btn; var old = GUI.color;
+        GUI.color = BtnEnabled(i) ? uiTint : new Color(1f, 1f, 1f, 0.35f); GUI.Box(BtnRect(i), GUIContent.none, st); GUI.color = old;
+        var lab = new GUIStyle(mid){ alignment = TextAnchor.MiddleCenter, fontSize = 26 }; lab.normal.textColor = BtnEnabled(i) ? Color.white : new Color(1f, 1f, 1f, 0.4f);
+        GUI.Label(BtnRect(i), bs[i], lab);
+      }
+    }
+    void Panel(Rect r){ var old = GUI.color; GUI.color = new Color(uiTint.r, uiTint.g, uiTint.b, 0.85f); if (uiPanel) GUI.Box(r, GUIContent.none, panel); GUI.color = old; }
     void OnGUI(){
       float sc = Screen.height / 720f; GUI.matrix = Matrix4x4.Scale(new Vector3(sc, sc, 1f)); float W = Screen.width / sc, H = 720f;
       if (big == null){
         big = new GUIStyle(GUI.skin.label){ fontSize = 64, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter }; big.normal.textColor = uiTint;
         mid = new GUIStyle(GUI.skin.label){ fontSize = 30, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft }; mid.normal.textColor = Color.white;
+        btn = new GUIStyle(){ border = new RectOffset(24, 24, 24, 24) }; btn.normal.background = uiButton;
+        btnHi = new GUIStyle(){ border = new RectOffset(24, 24, 24, 24) }; btnHi.normal.background = uiButtonHi ? uiButtonHi : uiButton;
+        panel = new GUIStyle(){ border = new RectOffset(44, 44, 44, 44) }; panel.normal.background = uiPanel;
       }
       var old = GUI.color; var c = new GUIStyle(mid){ alignment = TextAnchor.MiddleCenter };
-      GUI.color = boltTint; for (int i = 0; i < Lives; i++) if (iconLife) GUI.DrawTexture(new Rect(24 + i * 52, 20, 44, 44), iconLife);
-      GUI.color = uiTint; if (iconScore) GUI.DrawTexture(new Rect(W - 350, 20, 44, 44), iconScore);
-      GUI.color = old; GUI.Label(new Rect(W - 298, 18, 190, 48), Score.ToString("000000"), mid);
-      if (Power != PowerKind.None && State != GameState.Ready){   // active power-up: its badge + time left
+      bool menu = State == GameState.Ready || State == GameState.Select;
+      if (!menu){
+        GUI.color = boltTint; for (int i = 0; i < Lives; i++) if (iconLife) GUI.DrawTexture(new Rect(24 + i * 52, 20, 44, 44), iconLife);
+        GUI.color = uiTint; if (iconScore) GUI.DrawTexture(new Rect(W - 350, 20, 44, 44), iconScore);
+        GUI.color = old; GUI.Label(new Rect(W - 298, 18, 190, 48), Score.ToString("000000"), mid);
+      }
+      if (Power != PowerKind.None && !menu){   // active power-up: its badge + time left
         var sp = PowerSprite(Power); GUI.color = PowerTint(Power);
         if (sp) GUI.DrawTexture(new Rect(24, 74, 56, 56), sp.texture);
         GUI.DrawTexture(new Rect(86, 98, 120f * Mathf.Clamp01(powerLeft / powerTime), 8), Texture2D.whiteTexture); GUI.color = old;
@@ -432,29 +536,34 @@ namespace NeonHive {
         GUI.DrawTexture(pr, Texture2D.whiteTexture); GUI.color = uiTint;
         if (iconPause) GUI.DrawTexture(new Rect(pr.x + 10, pr.y + 10, pr.width - 20, pr.height - 20), iconPause); GUI.color = old;
         var lv = new GUIStyle(c){ fontSize = 22 }; lv.normal.textColor = uiTint;
-        GUI.Label(new Rect(0, 14, W, 30), phase >= Phase.BossIntro ? $"{IonDrift.Theme.ToUpper()}  -  PRISM MOTH" : $"{IonDrift.Theme.ToUpper()}  {level + 1}/4", lv);
+        GUI.Label(new Rect(0, 14, W, 30), phase >= Phase.BossIntro ? $"{T.name.ToUpper()}  -  {B.name.ToUpper()}" : $"{T.name.ToUpper()}  {level + 1}/4", lv);
         if (phase == Phase.Boss){   // boss health bar
           GUI.color = new Color(1, 1, 1, 0.25f); GUI.DrawTexture(new Rect(W * 0.5f - 300, 50, 600, 16), Texture2D.whiteTexture);
           GUI.color = bossTint; GUI.DrawTexture(new Rect(W * 0.5f - 300, 50, 600 * Mathf.Clamp01(bossHp / bossMaxHp), 16), Texture2D.whiteTexture); GUI.color = old;
         }
         if (State == GameState.Playing){
-          if (phase == Phase.Intro) { GUI.Label(new Rect(0, H * 0.3f, W, 90), $"LEVEL {level + 1}", big); GUI.Label(new Rect(0, H * 0.3f + 90, W, 50), IonDrift.Levels[level].name.Substring(3), c); }
+          if (phase == Phase.Intro) { GUI.Label(new Rect(0, H * 0.3f, W, 90), $"LEVEL {theme * 4 + level + 1}", big); GUI.Label(new Rect(0, H * 0.3f + 90, W, 50), L.name.Substring(3), c); }
           else if (phase == Phase.Clear) GUI.Label(new Rect(0, H * 0.3f, W, 90), "LEVEL CLEAR", big);
           else if (phase == Phase.BossIntro && Mathf.Repeat(Time.time * 2.5f, 1f) > 0.3f){ var wst = new GUIStyle(big); wst.normal.textColor = spinnerTint; GUI.Label(new Rect(0, H * 0.3f, W, 90), "WARNING", wst); }
         }
       }
       if (State == GameState.Ready){
-        if (logo) GUI.DrawTexture(new Rect(W * 0.5f - 420, H * 0.3f - 120, 840, 210), logo); else GUI.Label(new Rect(0, H * 0.3f, W, 90), "NEON HIVE", big); GUI.Label(new Rect(0, H * 0.3f + 100, W, 50), "Space / A / tap to start", c);
-        if (High > 0) GUI.Label(new Rect(0, H * 0.3f + 150, W, 50), $"High score {High}", c);
+        if (logo) GUI.DrawTexture(new Rect(W * 0.5f - 440, 90, 880, 220), logo); else GUI.Label(new Rect(0, 160, W, 90), "NEON HIVE", big);
+        GUI.Label(new Rect(0, 330, W, 44), High > 0 ? $"High score {High}" : "Arrows / A D / drag to steer,  Space / tap to fire", c);
       }
-      else if (State == GameState.Paused){ GUI.Label(new Rect(0, H * 0.35f, W, 90), "PAUSED", big); GUI.Label(new Rect(0, H * 0.35f + 100, W, 50), "Tap or Esc / Start to resume", c); }
-      else if (State == GameState.GameOver || State == GameState.ThemeClear){
-        GUI.Label(new Rect(0, H * 0.28f, W, 90), State == GameState.GameOver ? "GAME OVER" : "THEME CLEAR", big);
-        if (State == GameState.ThemeClear) GUI.Label(new Rect(0, H * 0.28f + 80, W, 44), $"{IonDrift.Theme} complete", c);
-        GUI.Label(new Rect(0, H * 0.28f + 125, W, 44), $"Score {Score}", c);
-        GUI.Label(new Rect(0, H * 0.28f + 170, W, 44), newHigh ? $"NEW HIGH SCORE {High}" : $"High score {High}", c);
-        GUI.Label(new Rect(0, H * 0.28f + 225, W, 44), "Space / A / tap to play again", c);
+      else if (State == GameState.Select){
+        Panel(new Rect(W * 0.5f - 260, 120, 520, 440));
+        GUI.Label(new Rect(0, 150, W, 60), "SELECT THEME", new GUIStyle(big){ fontSize = 44 });
       }
+      else if (State == GameState.Paused){ Panel(new Rect(W * 0.5f - 300, 200, 600, 430)); GUI.Label(new Rect(0, 250, W, 90), "PAUSED", big); GUI.Label(new Rect(0, 340, W, 50), "Tap or Esc / Start to resume", c); }
+      else if (State == GameState.GameOver || State == GameState.ThemeClear || State == GameState.Win){
+        Panel(new Rect(W * 0.5f - 320, 150, 640, 500));
+        GUI.Label(new Rect(0, 185, W, 90), State == GameState.GameOver ? "GAME OVER" : State == GameState.Win ? "HIVE CLEARED" : "THEME CLEAR", big);
+        GUI.Label(new Rect(0, 265, W, 44), State == GameState.Win ? "All three themes complete!" : State == GameState.ThemeClear ? $"{T.name} complete  -  next: {Themes.All[theme + 1].name}" : $"{T.name}  level {theme * 4 + level + 1}", c);
+        GUI.Label(new Rect(0, 315, W, 44), $"Score {Score}", c);
+        GUI.Label(new Rect(0, 360, W, 44), newHigh ? $"NEW HIGH SCORE {High}" : $"High score {High}", c);
+      }
+      if (State != GameState.Playing && (State != GameState.GameOver && State != GameState.ThemeClear && State != GameState.Win || Time.unscaledTime - overAt >= 0.8f)) DrawButtons();
     }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -470,7 +579,8 @@ namespace NeonHive {
       foreach (var e in ebullets) Check(e.s - S, speed + 9f, e.ang);
       return d;
     }
-    /// <summary>F1-F4: jump to level 1-4. F5: jump to the boss. F6: grant the next power-up. F8: freeze / unfreeze.
+    /// <summary>F1-F4: jump to level 1-4 of the current theme. F5: jump to the current theme's boss. F7: switch to the next
+    /// theme (wraps) at its level 1. F6: grant the next power-up. F8: freeze / unfreeze.
     /// F9: toggle the autopilot bot (an "active average player": always firing, dodges what's close, aims at the next bug
     /// with a reaction delay and aim noise).</summary>
     void DevKeys(){
@@ -478,12 +588,17 @@ namespace NeonHive {
       if (kb.f9Key.wasPressedThisFrame){ bot = !bot; Debug.Log($"[NH] dev bot {(bot ? "on" : "off")}"); }
       if (kb.f8Key.wasPressedThisFrame && State == GameState.Playing){ Time.timeScale = Time.timeScale == 0f ? 1f : 0f; Debug.Log($"[NH] dev freeze {Time.timeScale == 0f}"); }
       if (State != GameState.Playing) return;
+      if (kb.f7Key.wasPressedThisFrame){
+        ClearField(); Time.timeScale = 1f; int t = (theme + 1) % Themes.All.Length;
+        ApplyTheme(t); GameAudio.I?.SetMusic(themeMusic != null && t < themeMusic.Length ? themeMusic[t] : null); BeginLevel(0);
+        Debug.Log($"[NH] dev jump theme {t + 1}");
+      }
       for (int i = 0; i < 5; i++){
         var k = i == 0 ? kb.f1Key : i == 1 ? kb.f2Key : i == 2 ? kb.f3Key : i == 3 ? kb.f4Key : kb.f5Key;
         if (!k.wasPressedThisFrame) continue;
         ClearField(); Time.timeScale = 1f;
-        if (i < 4) BeginLevel(i); else { level = 3; Track.SetShape(IonDrift.Levels[3].curve, IonDrift.Levels[3].twist, S + 110f); BeginBoss(); }
-        Debug.Log($"[NH] dev jump {(i < 4 ? "level " + (i + 1) : "boss")}");
+        if (i < 4) BeginLevel(i); else { level = 3; Track.SetShape(L.curve, L.twist, S + 110f); BeginBoss(); }
+        Debug.Log($"[NH] dev jump {(i < 4 ? "level " + (theme * 4 + i + 1) : "boss " + B.name)}");
       }
       if (kb.f6Key.wasPressedThisFrame) GrantPower(Power == PowerKind.Homing ? PowerKind.Spread : (PowerKind)((int)Power + 1));
     }

@@ -52,8 +52,11 @@ public static class BuildWeb {
   public static void SetupScene(){
     Directory.CreateDirectory(Gen); Directory.CreateDirectory("Assets/Scenes");
     EnsureURP(); var profile = EnsureBloom();
-    var ringMesh = AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Tunnel/ion_drift_ring.obj").OfType<Mesh>().FirstOrDefault();
+    string[] themeIds = { "ion_drift", "acid_hive", "redline_core" };
+    var ringMeshes = themeIds.Select(id => AssetDatabase.LoadAllAssetsAtPath($"Assets/Art/Tunnel/{id}_ring.obj").OfType<Mesh>().FirstOrDefault()).ToArray();
+    var ringMesh = ringMeshes[0];
     if (!ringMesh) throw new System.Exception("ring mesh missing: Assets/Art/Tunnel/ion_drift_ring.obj");
+    for (int i = 1; i < ringMeshes.Length; i++) if (!ringMeshes[i]){ Debug.LogWarning($"[Setup] missing ring mesh {themeIds[i]}, using round"); ringMeshes[i] = ringMesh; }
     var ringMat = Mat("RingMat", Load<Texture2D>("Assets/Art/Tunnel/ion_drift_wall.png"), Color.white, 0f, 45f, 95f);
     var spriteMat = Mat("SpriteGlow", Texture2D.whiteTexture, new Color(2.2f, 2.2f, 2.2f, 1f), 1f, 1000f, 2000f);
     var miteMat = Mat("MiteGlow", Texture2D.whiteTexture, new Color(3.2f, 3.2f, 3.2f, 1f), 1f, 1000f, 2000f);   // Mites glow a bit hotter than other sprites
@@ -70,7 +73,8 @@ public static class BuildWeb {
     camGo.AddComponent<AudioListener>();
     var vol = new GameObject("PostFX").AddComponent<Volume>(); vol.isGlobal = true; vol.sharedProfile = profile;
 
-    var tunnel = new GameObject("Tunnel").AddComponent<Tunnel>(); tunnel.ringMesh = ringMesh; tunnel.ringMat = ringMat;
+    var tunnel = new GameObject("Tunnel").AddComponent<Tunnel>(); tunnel.ringMeshes = ringMeshes; tunnel.ringMat = ringMat;
+    tunnel.wallTextures = themeIds.Select(id => Load<Texture2D>($"Assets/Art/Tunnel/{id}_wall.png")).ToArray();
 
     var g = new GameObject("Game").AddComponent<Game>();
     g.tunnel = tunnel; g.cam = cam; g.spriteMat = spriteMat;
@@ -85,9 +89,14 @@ public static class BuildWeb {
     g.iconLife = Load<Texture2D>("Assets/Art/UI/ui_icon_life.png"); g.iconScore = Load<Texture2D>("Assets/Art/UI/ui_icon_score.png");
     g.iconPause = Load<Texture2D>("Assets/Art/UI/ui_icon_pause.png"); g.miteMat = miteMat;
     g.logo = Load<Texture2D>("Assets/Art/UI/ui_logo_neon_hive.png");
+    g.beetleSprite = Load<Sprite>("Assets/Art/Enemies/bug_beetle.png");
+    g.bossSprites = new[]{ "boss_prism_moth", "boss_hive_queen", "boss_core_scarab" }.Select(n => Load<Sprite>($"Assets/Art/Bosses/{n}.png")).ToArray();
+    g.uiButton = Load<Texture2D>("Assets/Art/UI/ui_button.png"); g.uiButtonHi = Load<Texture2D>("Assets/Art/UI/ui_button_highlight.png"); g.uiPanel = Load<Texture2D>("Assets/Art/UI/ui_panel.png");
 
     var ga = new GameObject("GameAudio").AddComponent<GameAudio>();
-    ga.music = Load<AudioClip>("Assets/Audio/Music/theme1_loop.ogg");
+    g.themeMusic = new[]{ 1, 2, 3 }.Select(n => Load<AudioClip>($"Assets/Audio/Music/theme{n}_loop.ogg")).ToArray();
+    g.menuMusic = Load<AudioClip>("Assets/Audio/Music/menu_loop.ogg");
+    ga.music = g.menuMusic;
     ga.shot = Load<AudioClip>("Assets/Audio/SFX/player_shot.ogg"); ga.bugHit = Load<AudioClip>("Assets/Audio/SFX/bug_hit.ogg");
     ga.bugExplode = Load<AudioClip>("Assets/Audio/SFX/bug_explode.ogg"); ga.playerHit = Load<AudioClip>("Assets/Audio/SFX/player_hit.ogg");
     ga.lifeLost = Load<AudioClip>("Assets/Audio/SFX/life_lost.ogg");
@@ -95,10 +104,11 @@ public static class BuildWeb {
     ga.spread = Sfx("weapon_spread"); ga.laser = Sfx("weapon_laser"); ga.plasma = Sfx("weapon_plasma"); ga.homing = Sfx("weapon_homing");
     ga.pickup = Sfx("powerup_pickup"); ga.extraLife = Sfx("extra_life"); ga.levelStart = Sfx("level_start"); ga.levelClear = Sfx("level_clear");
     ga.bossWarning = Sfx("boss_warning"); ga.bossHit = Sfx("boss_hit"); ga.bossExplode = Sfx("boss_explode"); ga.enemyShot = Sfx("enemy_shot");
+    ga.menuMove = Sfx("menu_move"); ga.menuSelect = Sfx("menu_select");
 
     EditorSceneManager.SaveScene(scene, ScenePath);
     EditorBuildSettings.scenes = new[]{ new EditorBuildSettingsScene(ScenePath, true) };
-    Debug.Log($"[Setup] scene saved; explosion frames={g.explosion.Length} spark frames={g.spark.Length} ringMesh verts={ringMesh.vertexCount}");
+    Debug.Log($"[Setup] scene saved; explosion frames={g.explosion.Length} spark frames={g.spark.Length} ringMesh verts={string.Join(",", ringMeshes.Select(m => m.vertexCount))}");
   }
 
   /// <summary>Page hardening (same as Tidewatch / Free Flight): canvas touch-action:none + preventDefault on touch events,
