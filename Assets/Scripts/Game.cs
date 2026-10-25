@@ -164,7 +164,7 @@ namespace NeonHive {
     float MenuTop => State == GameState.Ready ? 400f : State == GameState.Select ? 230f : 470f;
     Rect BtnRect(int i){ float W = Screen.width / (Screen.height / 720f); return new Rect(W * 0.5f - 190f, MenuTop + i * 74f, 380f, 62f); }
     bool BtnEnabled(int i) => State != GameState.Select || i >= Themes.All.Length || i <= unlockedTheme;
-    /// <summary>Menu input: up / down (keys, d-pad, stick) move the highlight, Space / Enter / A pick it, a click or tap picks
+    /// <summary>Menu input: up / down (keys, d-pad) move the highlight, Space / Enter / A pick it, a click or tap picks
     /// the button under it. Returns the picked index, -2 for a click / tap outside every button, else -1.</summary>
     int MenuInput(string[] btns){
       var kb = Keyboard.current; var gp = Gamepad.current; int n = btns.Length; int dir = 0;
