@@ -18,7 +18,7 @@ namespace NeonHive {
     public Tunnel tunnel; public Camera cam; public Material spriteMat, miteMat;
     public Sprite shipSprite, miteSprite, waspSprite, spinnerSprite, bossSprite, bulletSprite, enemyBulletSprite, glowSprite;
     public Sprite spreadSprite, laserSprite, rapidSprite, homingSprite; public Sprite[] explosion, spark;
-    public Texture2D iconLife, iconScore, iconPause;
+    public Texture2D iconLife, iconScore, iconPause, logo;
     [Header("Tuning")]
     public float speed = 14f, shipR = 4.1f, turnSpeed = 170f, camBack = 9f, lookAhead = 22f;
     public float fireInterval = 0.13f, boltSpeed = 62f, boltLife = 1.3f, spawnAhead = 75f;
@@ -227,12 +227,12 @@ namespace NeonHive {
       if ((bossCd -= dt) > 0f) return;
       bool enraged = bossHp < bossMaxHp * 0.5f;
       if (bossPattern % 3 < 2){   // bullet fan around the ship's angle
-        int n = enraged ? 6 : 5; float spreadDeg = enraged ? 45f : 36f, off = Random.Range(-8f, 8f);
+        int n = enraged ? 5 : 3; float spreadDeg = enraged ? 36f : 24f, off = Random.Range(-8f, 8f);
         for (int k = 0; k < n; k++) FireEnemyBullet(bossS - 1f, Ang + off + Mathf.Lerp(-spreadDeg, spreadDeg, k / (n - 1f)), 0f);
         GameAudio.I?.Play("enemyShot"); LogOnce("bossfan", $"[NH] boss pattern fan n={n}");
-        bossCd = enraged ? 2.0f : 2.5f;
+        bossCd = enraged ? 2.4f : 2.9f;
       } else {                    // spawn a ring of Mites
-        int n = enraged ? 5 : 3; float a0 = Random.Range(-180f, 180f);
+        int n = enraged ? 4 : 3; float a0 = Random.Range(-180f, 180f);
         for (int k = 0; k < n; k++) SpawnBug(BugKind.Mite, bossS - 2f, a0 + k * 360f / n);
         LogOnce("bossmites", $"[NH] boss pattern mites n={n}"); bossCd = enraged ? 2.6f : 3.2f;
       }
@@ -256,7 +256,7 @@ namespace NeonHive {
       Color c = k == BugKind.Wasp ? waspTint : k == BugKind.Spinner ? spinnerTint : miteTint;
       var go = MakeSprite(k.ToString(), sp, c, k == BugKind.Spinner ? 2.0f : 1.7f, out var sr); if (miteMat) sr.sharedMaterial = miteMat;
       float spd = k == BugKind.Wasp ? 19f : k == BugKind.Spinner ? 9f : 13f;
-      bugs.Add(new Bug{ t = go.transform, sr = sr, kind = k, s = s, ang = ang, speed = spd * IonDrift.Levels[level].bugSpeed * Random.Range(0.85f, 1.15f), hp = k == BugKind.Spinner ? 4f : 1f,
+      bugs.Add(new Bug{ t = go.transform, sr = sr, kind = k, s = s, ang = ang, speed = spd * (phase >= Phase.BossIntro ? 1.1f : IonDrift.Levels[level].bugSpeed) * Random.Range(0.85f, 1.15f), hp = k == BugKind.Spinner ? 4f : 1f,
                         phase = Random.Range(0f, 6.28f), fireCd = 0.6f });
       LogOnce("bug" + k, $"[NH] bug spawned {k}");
     }
@@ -444,7 +444,7 @@ namespace NeonHive {
         }
       }
       if (State == GameState.Ready){
-        GUI.Label(new Rect(0, H * 0.3f, W, 90), "NEON HIVE", big); GUI.Label(new Rect(0, H * 0.3f + 100, W, 50), "Space / A / tap to start", c);
+        if (logo) GUI.DrawTexture(new Rect(W * 0.5f - 420, H * 0.3f - 120, 840, 210), logo); else GUI.Label(new Rect(0, H * 0.3f, W, 90), "NEON HIVE", big); GUI.Label(new Rect(0, H * 0.3f + 100, W, 50), "Space / A / tap to start", c);
         if (High > 0) GUI.Label(new Rect(0, H * 0.3f + 150, W, 50), $"High score {High}", c);
       }
       else if (State == GameState.Paused){ GUI.Label(new Rect(0, H * 0.35f, W, 90), "PAUSED", big); GUI.Label(new Rect(0, H * 0.35f + 100, W, 50), "Tap or Esc / Start to resume", c); }

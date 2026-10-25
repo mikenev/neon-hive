@@ -84,6 +84,7 @@ public static class BuildWeb {
     g.explosion = Frames("Assets/Art/FX/fx_explosion_sheet.png"); g.spark = Frames("Assets/Art/FX/fx_hit_spark_sheet.png");
     g.iconLife = Load<Texture2D>("Assets/Art/UI/ui_icon_life.png"); g.iconScore = Load<Texture2D>("Assets/Art/UI/ui_icon_score.png");
     g.iconPause = Load<Texture2D>("Assets/Art/UI/ui_icon_pause.png"); g.miteMat = miteMat;
+    g.logo = Load<Texture2D>("Assets/Art/UI/ui_logo_neon_hive.png");
 
     var ga = new GameObject("GameAudio").AddComponent<GameAudio>();
     ga.music = Load<AudioClip>("Assets/Audio/Music/theme1_loop.ogg");
